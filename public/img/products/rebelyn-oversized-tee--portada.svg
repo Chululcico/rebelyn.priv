@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="1200" viewBox="0 0 900 1200" role="img" aria-label="Oversized Tee Negro">
+  <rect width="900" height="1200" fill="#141414"/>
+  <rect x="48" y="48" width="804" height="1104" fill="none" stroke="#F2F2F2" stroke-opacity="0.25" stroke-width="2"/>
+  <text x="72" y="120" fill="#F2F2F2" font-family="Helvetica, Arial, sans-serif" font-size="28" letter-spacing="14" opacity="0.7">REBELYN</text>
+  <g fill="none" stroke="#F2F2F2" stroke-opacity="0.5" stroke-width="3">
+    <path d="M330 420 l-70 50 v220 l70 40 70-40 70 40 70-40 V470 l-70-50 -70 55 z"/>
+    <path d="M400 420 a50 50 0 0 0 100 0"/>
+    <line x1="450" y1="520" x2="450" y2="640"/>
+  </g>
+  <text x="450" y="880" text-anchor="middle" fill="#F2F2F2" font-family="Helvetica, Arial, sans-serif" font-size="46" letter-spacing="4">Oversized Tee</text>
+  <text x="450" y="935" text-anchor="middle" fill="#F2F2F2" font-family="Helvetica, Arial, sans-serif" font-size="30" letter-spacing="6" opacity="0.65">Negro</text>
+  <text x="450" y="1120" text-anchor="middle" fill="#F2F2F2" font-family="Helvetica, Arial, sans-serif" font-size="20" letter-spacing="4" opacity="0.4">IMAGEN PROVISIONAL · SUSTITUIR</text>
+</svg>

@@ -1,0 +1,13 @@
+import type { Metadata } from "next";
+import { Suspense } from "react";
+import { ProductsTable } from "@/components/admin/products-table";
+
+export const metadata: Metadata = { title: "Productos" };
+
+export default function AdminProductsPage() {
+  return (
+    <Suspense fallback={<p className="text-muted">Cargando…</p>}>
+      <ProductsTable />
+    </Suspense>
+  );
+}

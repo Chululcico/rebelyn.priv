@@ -1,0 +1,54 @@
+{
+  "name": "rebelyn",
+  "version": "1.0.0",
+  "private": true,
+  "description": "REBELYN — tienda online de ropa. Next.js + Prisma + PostgreSQL + Stripe.",
+  "scripts": {
+    "dev": "next dev",
+    "build": "prisma generate && next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:deploy": "prisma migrate deploy",
+    "prisma:studio": "prisma studio",
+    "seed": "tsx prisma/seed.ts"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.13.0",
+    "@stripe/react-stripe-js": "^3.1.1",
+    "@stripe/stripe-js": "^5.8.0",
+    "bcryptjs": "^3.0.2",
+    "client-only": "^0.0.1",
+    "clsx": "^2.1.1",
+    "firebase": "^13.1.0",
+    "firebase-admin": "^14.5.0",
+    "next": "^15.5.4",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "resend": "^4.7.0",
+    "server-only": "^0.0.1",
+    "stripe": "^18.4.0",
+    "tailwind-merge": "^3.3.1",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.12",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^22.17.2",
+    "@types/react": "^19.1.10",
+    "@types/react-dom": "^19.1.7",
+    "postcss": "^8.5.6",
+    "prisma": "^6.13.0",
+    "tailwindcss": "^4.1.12",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

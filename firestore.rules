@@ -1,0 +1,45 @@
+﻿rules_version = '"'"'2'"'"';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    function isAdmin() {
+      return isSignedIn() && getUserData().role in ["ADMIN", "SUPER_ADMIN"];
+    }
+
+    match /users/{uid} {
+      allow read: if isSignedIn() && request.auth.uid == uid;
+      allow create: if isSignedIn() && request.auth.uid == uid;
+      allow update: if isSignedIn() && request.auth.uid == uid && !("role" in request.resource.data.diff(resource.data).affectedKeys());
+      allow delete: if false;
+    }
+
+    match /products/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /categories/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /variants/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /orders/{orderId} {
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn();
+      allow update: if isAdmin();
+      allow delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,16 @@
+.DS_Store
+Thumbs.db
+node_modules/
+.vercel/
+.next/
+out/
+build/
+.env
+.env.local
+.env*.local
+*.tsbuildinfo
+next-env.d.ts
+prisma/*.db
+npm-debug.log*
+yarn-error.log*
+.DS_Store

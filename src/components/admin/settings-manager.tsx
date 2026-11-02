@@ -1,0 +1,134 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { api } from "@/lib/admin/api-client";
+
+type ShippingMethod = { id: string; name: string; priceCents: number; freeOverCents: number | null; estimatedDays: string; active: boolean };
+type Settings = {
+  storeName: string;
+  contactEmail: string;
+  contactPhone: string;
+  address: string;
+  legalName: string;
+  legalId: string;
+  currency: string;
+  taxRatePercent: number;
+  pricesIncludeTax: boolean;
+  social: { instagram?: string; tiktok?: string; whatsapp?: string };
+  shippingMethods: ShippingMethod[];
+};
+
+export function SettingsManager() {
+  const [settings, setSettings] = useState<Settings | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    api<{ settings: Settings }>("/api/admin/settings").then((d) => setSettings(d.settings)).catch((e) => setError(e.message));
+  }, []);
+
+  if (error) return <p className="text-[1.4rem] text-magenta">{error}</p>;
+  if (!settings) return <p className="text-muted">Cargando ajustes…</p>;
+
+  async function save(event: React.FormEvent) {
+    event.preventDefault();
+    if (!settings) return;
+    setSaving(true);
+    setError(null);
+    setSaved(false);
+    try {
+      await api("/api/admin/settings", { method: "PATCH", body: JSON.stringify(settings) });
+      setSaved(true);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Error al guardar");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const set = <K extends keyof Settings>(key: K, value: Settings[K]) => setSettings((s) => (s ? { ...s, [key]: value } : s));
+  const setMethod = (index: number, patch: Partial<ShippingMethod>) =>
+    setSettings((s) => (s ? { ...s, shippingMethods: s.shippingMethods.map((m, i) => (i === index ? { ...m, ...patch } : m)) } : s));
+
+  return (
+    <div>
+      <h1 className="text-[2.2rem] uppercase tracking-[0.12em] mb-6">Ajustes de la tienda</h1>
+      <form onSubmit={save} className="max-w-[80rem]">
+        <div className="grid gap-x-5 md:grid-cols-2 border hairline bg-paper p-5 mb-6">
+          <label className="block mb-4"><span className="label">Nombre de la tienda</span>
+            <input className="field" required value={settings.storeName} onChange={(e) => set("storeName", e.target.value)} />
+          </label>
+          <label className="block mb-4"><span className="label">Email de contacto</span>
+            <input className="field" type="email" required value={settings.contactEmail} onChange={(e) => set("contactEmail", e.target.value)} />
+          </label>
+          <label className="block mb-4"><span className="label">Teléfono</span>
+            <input className="field" value={settings.contactPhone} onChange={(e) => set("contactPhone", e.target.value)} />
+          </label>
+          <label className="block mb-4"><span className="label">Dirección fiscal</span>
+            <input className="field" value={settings.address} onChange={(e) => set("address", e.target.value)} />
+          </label>
+          <label className="block mb-4"><span className="label">Nombre legal</span>
+            <input className="field" value={settings.legalName} onChange={(e) => set("legalName", e.target.value)} />
+          </label>
+          <label className="block mb-4"><span className="label">NIF/CIF</span>
+            <input className="field" value={settings.legalId} onChange={(e) => set("legalId", e.target.value)} />
+          </label>
+          <label className="block mb-4"><span className="label">Instagram</span>
+            <input className="field" value={settings.social.instagram ?? ""} onChange={(e) => set("social", { ...settings.social, instagram: e.target.value })} />
+          </label>
+          <label className="block mb-4"><span className="label">TikTok</span>
+            <input className="field" value={settings.social.tiktok ?? ""} onChange={(e) => set("social", { ...settings.social, tiktok: e.target.value })} />
+          </label>
+        </div>
+
+        <h2 className="text-[1.5rem] uppercase tracking-[0.12em] mb-3">Métodos de envío</h2>
+        <div className="border hairline bg-paper p-5 mb-6">
+          {settings.shippingMethods.map((method, index) => (
+            <div key={method.id} className="grid gap-3 grid-cols-[1fr_1fr_1fr_1fr_auto] items-end py-3 border-b hairline last:border-0">
+              <label className="block"><span className="text-[1.15rem] text-muted">Nombre</span>
+                <input className="field py-2" value={method.name} onChange={(e) => setMethod(index, { name: e.target.value })} />
+              </label>
+              <label className="block"><span className="text-[1.15rem] text-muted">Precio €</span>
+                <input className="field py-2" inputMode="decimal" value={(method.priceCents / 100).toFixed(2)} onChange={(e) => setMethod(index, { priceCents: Math.round(parseFloat(e.target.value || "0") * 100) })} />
+              </label>
+              <label className="block"><span className="text-[1.15rem] text-muted">Gratis desde € (vacío = nunca)</span>
+                <input className="field py-2" inputMode="decimal" value={method.freeOverCents != null ? (method.freeOverCents / 100).toFixed(2) : ""} onChange={(e) => setMethod(index, { freeOverCents: e.target.value ? Math.round(parseFloat(e.target.value) * 100) : null })} />
+              </label>
+              <label className="block"><span className="text-[1.15rem] text-muted">Plazo</span>
+                <input className="field py-2" value={method.estimatedDays} onChange={(e) => setMethod(index, { estimatedDays: e.target.value })} />
+              </label>
+              <label className="flex items-center gap-2 text-[1.3rem] pb-2">
+                <input type="checkbox" checked={method.active} onChange={(e) => setMethod(index, { active: e.target.checked })} className="w-5 h-5" />
+                Activo
+              </label>
+            </div>
+          ))}
+          <button
+            type="button"
+            className="button button--secondary mt-3"
+            onClick={() =>
+              setSettings((s) =>
+                s
+                  ? {
+                      ...s,
+                      shippingMethods: [
+                        ...s.shippingMethods,
+                        { id: `custom-${Date.now()}`, name: "Envío nuevo", priceCents: 490, freeOverCents: 7500, estimatedDays: "2–4 días", active: true },
+                      ],
+                    }
+                  : s,
+              )
+            }
+          >
+            + Añadir método
+          </button>
+        </div>
+
+        {error && <p className="text-[1.4rem] text-magenta mb-4" role="alert">{error}</p>}
+        {saved && <p className="text-[1.4rem] text-volt-dark mb-4" role="status">Ajustes guardados.</p>}
+        <button className="button" type="submit" disabled={saving}>{saving ? "Guardando…" : "Guardar ajustes"}</button>
+      </form>
+    </div>
+  );
+}

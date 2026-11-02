@@ -1,0 +1,2854 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>REBELYN · Rompe con lo común</title>
+  <link rel="icon" type="image/jpeg" href="https://i.postimg.cc/RVt3nz8z/logo.jpg">
+  <link rel="apple-touch-icon" href="https://i.postimg.cc/RVt3nz8z/logo.jpg">
+  <meta name="description" content="REBELYN: ropa que rompe con lo común. Combina comodidad y estilo cada día.">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="REBELYN">
+  <meta property="og:description" content="Ropa que rompe con lo común. Combina comodidad y estilo cada día.">
+  <meta property="og:image" content="https://i.postimg.cc/NjwK6zhC/logo-pgn.png">
+  <meta name="theme-color" content="#ffffff">
+
+<!-- ==========================================================================
+     ESTILOS
+     --------------------------------------------------------------------------
+     Todo el CSS va aquí, con los tokens al principio. Cada bloque tiene su
+     comentario, así que para cambiar el diseño basta con buscar el bloque.
+     Al final del archivo tienes el mapa de dónde está cada cosa.
+     ========================================================================== -->
+<style>
+/* ==========================================================================
+   REBELYN · Prototipo de diseño · ESTILOS
+   --------------------------------------------------------------------------
+   Maqueta estática para revisar el diseño. Se abre con doble clic en
+   `index.html`; no necesita servidor ni base de datos.
+
+   La referencia visual es https://mktub.store/. De ahí salen la estructura, la
+   paleta, la escala tipográfica y las medidas de este archivo. Lo que NO es de
+   la referencia son la marca, los textos y las imágenes: eso es de REBELYN.
+
+   Este archivo es una maqueta monolítica: el HTML, los estilos, los datos y el
+   JavaScript viven juntos en `index.html`, en bloques separados y comentados.
+   Nada de esto va tal cual a producción: aquí los precios y el carrito viven en
+   el navegador. En la tienda real los calcula el servidor. Al terminar el
+   diseño, los estilos se trasladan a `apps/store/src/app/globals.css` y las
+   piezas a `packages/ui`.
+
+   Orden de este bloque:
+     1. Tokens                 → :root, de aquí sale color, tipografía y medidas
+     2. Base                   → reset, body, utilidades
+     3. Fondo fijo             → .bgimg, .siteblur
+     4. Cinta de texto         → .running-text
+     5. Cabecera               → .header, logo, iconos
+     6. Buscador               → .search, .predictive-search
+     7. Menú lateral           → .menu-drawer-container
+     8. Panel lateral          → .drawer
+     9. Portada                → .lf-hero
+    10. Secciones y rejilla    → .section, .grid
+    11. Tarjeta                → .card-*
+    12. Añadir rápido          → .add-to-cart-*
+    13. Botones                → .button
+    14. Catálogo               → .catalog, .facets, .chip, .swatch
+    15. Ficha de producto      → .product-*, .variant-*, .quantity, .accordion
+    16. Carrito                → .cart__*
+    17. Vacío                  → .empty-state
+    18. Pie                    → .footer
+    19. Animaciones            → .fade-in
+   ========================================================================== */
+
+/* ── 1 · Tokens ───────────────────────────────────────────────────────────────
+   Medidas de la referencia. La raíz es 10 px (62,5 %), así que 1,5rem son
+   15 px: por eso todo el archivo usa rem y los números salen enteros.
+   ──────────────────────────────────────────────────────────────────────── */
+:root {
+  color-scheme: light;
+
+  /* Color */
+  --ink: #121212;
+  --text: #202020;
+  --paper: #ffffff;
+  --muted: rgb(32 32 32 / 75%);
+  --hairline: #202020;
+  --hairline-soft: rgb(32 32 32 / 10%);
+  --wash: rgb(255 255 255 / 71%);
+
+  /* Acentos de la referencia */
+  --volt: #00ff76; /* cinta de texto */
+  --neon: #12e499; /* bordes y botón de añadir rápido */
+  --magenta: #d302b5; /* hover de enlaces y del marco de tallas */
+
+  /* Tipografía */
+  --font: Helvetica, Arial, sans-serif;
+  --scale: 1;
+  --tracking: 0.096rem; /* 0.96px: en la referencia la raíz es de 16px, aquí de 10px */
+  --leading: calc(1 + 0.8 / var(--scale));
+
+  /* Medidas */
+  --page-width: 140rem;
+  --gutter-mobile: 1.25rem;
+  --gutter-desktop: 2.5rem;
+  --gap-mobile: 20px;
+  --gap-desktop: 40px;
+--radius: 0px;
+--radius-media: 14px;
+--radius-badge: 4rem;
+  --radius-input: 8px;
+
+  /* Escalones */
+  --bp-450: 450px;
+  --bp-500: 500px;
+  --bp-750: 750px;
+  --bp-768: 768px;
+  --bp-990: 990px;
+}
+
+/* ── 2 · Base ──────────────────────────────────────────────────────────────────
+   Reset corto y las cuatro filas en las que se reparte el body: fondo, cinta,
+   contenido y pie. Las zonas de arriba usan `display: contents`, así que el
+   reparto sigue siendo el mismo.
+   ──────────────────────────────────────────────────────────────────────── */
+*,
+*::before,
+*::after { box-sizing: inherit; }
+
+html {
+  box-sizing: border-box;
+  font-size: calc(var(--scale) * 62.5%);
+  height: 100%;
+  /* El papel va aquí y no en `body`: si el body lo pintara, taparía las capas
+     de fondo fijo, que van por debajo con z-index negativo. */
+  background-color: var(--paper);
+}
+
+body {
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+  grid-template-columns: 100%;
+  margin: 0;
+  font-family: var(--font);
+  font-size: 1.5rem;
+  letter-spacing: var(--tracking);
+  line-height: var(--leading);
+  color: var(--text);
+  background-color: transparent;
+}
+
+@media screen and (min-width: 750px) {
+  body { font-size: 1.6rem; }
+}
+
+h1, h2, h3, h4, h5, h6, a, p, li, label, small, span, s {
+  margin: 0;
+  color: var(--text);
+}
+
+a { text-decoration: none; }
+ul, ol { margin: 0; padding: 0; list-style: none; }
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+img, svg { display: block; max-width: 100%; }
+summary { cursor: pointer; list-style: none; }
+summary::-webkit-details-marker { display: none; }
+
+:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+::selection { background: var(--neon); color: var(--ink); }
+
+/* Si una foto no carga, se ve una casilla gris con el nombre en lugar de un icono roto. */
+img.img-roto { background: #efefef; min-height: 14rem; object-fit: contain; }
+
+/* Las zonas del HTML solo sirven para poder inspeccionar cada bloque por id.
+   `display: contents` hace que no generen caja propia, así que el reparto en
+   cuatro filas del body sigue siendo exactamente el mismo. */
+.zona { display: contents; }
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0;
+  overflow: hidden; clip: rect(0 0 0 0);
+  white-space: nowrap; border: 0;
+}
+
+.page-width { max-width: var(--page-width); margin-inline: auto; padding-inline: var(--gutter-mobile); }
+@media screen and (min-width: 750px) { .page-width { padding-inline: var(--gutter-desktop); } }
+@media screen and (min-width: 1400px) { .page-width { padding-inline: 0; } }
+
+.upper { text-transform: uppercase; }
+
+/* Utilidades de maquetación. Las usan las vistas, así que están aquí y no
+   dentro de un componente: `row` pone en fila, `wrap` deja saltar de línea,
+   `gap-3` separa 0,8rem y `between` empuja el segundo hijo a la derecha. */
+.row { display: flex; align-items: center; }
+.row.wrap { flex-wrap: wrap; }
+.gap-3 { gap: 0.8rem; }
+.between { justify-content: space-between; }
+
+/* Listas sin viñeta y carruseles: son las clases que usa la galería de
+   miniaturas de la ficha, igual que en la referencia. En móvil el carrusel
+   desliza; a partir de `tablet-up` se ven todas en fila. */
+.list-unstyled { margin: 0; padding: 0; list-style: none; }
+.slider { display: flex; }
+.slider--mobile { overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: thin; }
+.slider__slide { flex: none; scroll-snap-align: start; }
+.slider--tablet-up { flex-wrap: wrap; gap: 0.6rem; }
+@media screen and (min-width: 750px) {
+  .slider--mobile { overflow-x: visible; scroll-snap-type: none; flex-wrap: wrap; }
+}
+
+/* ── 3 · Fondo fijo ───────────────────────────────────────────────────────────
+   Dos capas que no se mueven: la foto y el velo. Llevan `z-index` negativo
+   para quedar por detrás del contenido, y el papel blanco lo pone `html`, no
+   `body`, para que no las tape. Es el efecto que da aire a la portada.
+   ──────────────────────────────────────────────────────────────────────── */
+.bgimg {
+  position: fixed;
+  top: 0; left: 0;
+  display: block;
+  width: 100vw; height: 100vh;
+  background: var(--paper) center / cover no-repeat;
+  z-index: -10;
+}
+
+.siteblur {
+  position: fixed;
+  top: 0; left: 0;
+  display: block;
+  width: 100vw; height: 100vh;
+  z-index: -8;
+  backdrop-filter: blur(0px);
+  -webkit-backdrop-filter: blur(0px);
+}
+
+/* ── 4 · Cinta de texto ─────────────────────────────────────────────────────
+   Fondo negro con las letras blancas: es el anuncio del drop, no un aviso de
+   envío. */
+.running-text {
+  position: relative;
+  overflow: hidden;
+  white-space: nowrap;
+  background-color: var(--ink);
+}
+
+.running-text__container {
+  display: flex;
+  width: max-content;
+  /* `--grupo` y `--duracion` los pone setupMarquee() al medir el texto. */
+  animation: rb-marquee var(--duracion, 24s) linear infinite;
+}
+
+.running-text__content { display: inline-flex; align-items: center; flex: none; }
+
+.running-text__content span {
+  margin-right: 30px;
+  color: var(--paper);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* Separador: un tick vertical blanco. */
+.running-text__content span.tick { width: 2px; height: 10px; margin-right: 30px; background: var(--paper); }
+
+/* La pista se desplaza lo que mide un grupo, no su ancho entero: si no, el texto
+   sale disparado en cuanto hay más de una copia. */
+@keyframes rb-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(calc(-1 * var(--grupo, 0px))); }
+}
+
+@media screen and (max-width: 500px) {
+  .running-text__content span { margin-right: 20px; }
+}
+
+/* ── 5 · Cabecera ───────────────────────────────────────────────────────────────
+   Tres carriles: menú a la izquierda, marca centrada, iconos a la derecha.
+   ──────────────────────────────────────────────────────────────────────── */
+.header-wrapper { position: sticky; top: 0; z-index: 30; background: var(--paper); }
+
+.header {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 1rem;
+  padding-top: 6px;
+  padding-bottom: 0;
+}
+
+@media screen and (min-width: 990px) {
+  .header { padding-top: 12px; }
+}
+
+.header__start { justify-self: start; }
+.header__end { justify-self: end; display: flex; align-items: center; gap: 1.5rem; }
+
+/* Marca */
+.header__heading { margin: 0; }
+.header__heading-link { display: block; }
+/* El logo es un PNG de 1303x513 (aspecto 2,54), así que se dimensiona por alto:
+   si se fijase un ancho, la cabecera crecería hasta tapar media pantalla. */
+.header__logo { height: 2.2rem; width: auto; }
+@media screen and (min-width: 750px) {
+  .header__logo { height: 3rem; }
+}
+
+/* Iconos */
+.header__icon { display: block; }
+.header__icon--menu { padding: 0.5rem; margin-left: -0.5rem; }
+.header__icon--account { display: none; }
+@media screen and (min-width: 750px) { .header__icon--account { display: block; } }
+
+/* El carrito es una bolsa grande dibujada, no un contador. */
+.header__icon--cart { display: block; }
+.header__icon--cart svg { width: 26px; height: auto; }
+
+.cart-count-bubble {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 18px; height: 18px; margin-left: -0.75rem;
+  border-radius: 999px;
+  background: #e9e9e9;
+  font-size: 10px;
+  transform: translateY(-6px);
+}
+.cart-count-bubble span { color: #000000; }
+.cart-count-bubble[data-empty="true"] { display: none; }
+
+/* ── 6 · Buscador ──────────────────────────────────────────────────────────────
+   Panel desplegable bajo la cabecera, con sugerencias vivas mientras se escribe.
+   ──────────────────────────────────────────────────────────────────────── */
+.search-modal__content {
+  position: absolute;
+  top: 100%; left: 0; right: 0;
+  background: var(--paper);
+  border-bottom: 1px solid var(--hairline-soft);
+  padding: 2rem var(--gutter-mobile);
+}
+@media screen and (min-width: 750px) { .search-modal__content { padding-inline: var(--gutter-desktop); } }
+.search-modal__content[hidden] { display: none; }
+
+.search { display: flex; align-items: center; gap: 0.5rem; max-width: 40rem; margin-inline: auto; }
+.field { position: relative; flex: 1; display: flex; align-items: center; }
+.field__input {
+  width: 100%;
+  padding: 0.75rem 0;
+  background: transparent;
+  border: 1px solid var(--text);
+  border-radius: var(--radius-input);
+  font: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+}
+.search__button { padding: 0.5rem; }
+
+.predictive-search { margin-top: 1.5rem; border-top: 1px solid var(--hairline-soft); }
+.predictive-search__list { max-height: 60vh; overflow-y: auto; }
+.predictive-search__item {
+  display: flex; align-items: center; gap: 1rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--hairline-soft);
+}
+.predictive-search__item img { width: 3rem; height: 3.75rem; object-fit: cover; flex-shrink: 0; }
+.predictive-search__name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 1.3rem; }
+.predictive-search__price { font-size: 1.2rem; }
+.predictive-search__item[aria-selected="true"],
+.predictive-search__item:hover { background: var(--ink); color: var(--paper); }
+.predictive-search__item[aria-selected="true"] * { color: var(--paper); }
+.predictive-search__empty { padding: 1.5rem 0; font-size: 1.3rem; }
+
+/* ── 7 · Menú lateral ──────────────────────────────────────────────────────────── */
+.menu-drawer-container { display: block; }
+@media screen and (min-width: 990px) { .menu-drawer-container { display: none; } }
+
+/* A partir de 990px la navegación pasa a ocupar el carril izquierdo. */
+.header__nav { display: none; }
+.header__nav a { font-size: 1.3rem; text-transform: uppercase; }
+.header__nav a:hover { color: var(--neon); }
+@media screen and (min-width: 990px) {
+  .header__nav { display: flex; align-items: center; gap: 2.5rem; }
+}
+
+.menu-drawer__menu-item {
+  display: block;
+  padding-block: 1rem;
+  font-size: 1.5rem;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--hairline-soft);
+}
+
+.menu-drawer__utility-links { margin-top: 2rem; }
+.menu-drawer__account { display: block; padding-block: 0.5rem; font-size: 1.5rem; }
+.list-social { display: flex; align-items: center; gap: 1rem; margin-top: 1.5rem; }
+/* El enlace centra su icono: los dos glifos tienen alturas distintas dentro de
+   su caja y, sin esto, el de TikTok acaba 6 px más abajo que el de Instagram. */
+.list-social__item a { display: flex; align-items: center; justify-content: center; }
+.list-social__item .icon { display: block; width: 24px; height: 24px; }
+
+/* Las redes de la cabecera. Los selectores llevan `.header__end` para ganar en
+   cascada a `.list-social`, que está declarado justo antes. */
+.header__end .header__social { gap: 1.2rem; margin-top: 0; flex-shrink: 0; }
+.header__end .header__social .icon { width: 20px; height: 20px; flex-shrink: 0; }
+
+/* ── 8 · Paneles (menú y carrito) ──────────────────────────────────────────────
+   El carrito es un pop up: centrado, con esquinas redondeadas y casi toda la
+   pantalla, con la cruz de cierre en la esquina superior derecha. El menú sigue
+   siendo un panel lateral, que es lo que espera el burger.
+   ──────────────────────────────────────────────────────────────────────── */
+.drawer {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  width: min(78rem, calc(100vw - 3rem));
+  height: min(62rem, calc(100vh - 3rem));
+  max-width: none;
+  max-height: none;
+  margin: auto;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-media);
+  background: var(--paper);
+  color: var(--text);
+  box-shadow: 0 2.5rem 6rem rgb(0 0 0 / 25%);
+  overscroll-behavior: contain;
+  opacity: 0;
+  transform: translateY(1.5rem) scale(0.98);
+  transition: opacity 0.25s ease, transform 0.3s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+.drawer--left {
+  inset: 0 auto 0 0;
+  width: min(32rem, 90vw);
+  height: 100%;
+  margin: 0;
+  border-right: 1px solid var(--hairline-soft);
+  border-radius: 0;
+  box-shadow: none;
+  transform: translateX(-100%);
+}
+.drawer[open] { opacity: 1; transform: none; }
+.drawer::backdrop { background: rgb(0 0 0 / 45%); opacity: 0; transition: opacity 0.25s ease; }
+.drawer[open]::backdrop { opacity: 1; }
+
+/* El contenido no ocupa los 780 px del pop up: se queda en una columna legible. */
+.drawer:not(.drawer--left) .drawer__inner { width: 100%; max-width: 54rem; margin-inline: auto; }
+
+.drawer__inner { display: flex; flex-direction: column; height: 100%; }
+.drawer__head {
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  padding: 1.5rem var(--gutter-mobile);
+  border-bottom: 1px solid var(--hairline-soft);
+}
+@media screen and (min-width: 750px) { .drawer__head { padding-inline: var(--gutter-desktop); } }
+.drawer__title { font-size: 1.2rem; text-transform: uppercase; }
+.drawer__body { flex: 1; min-height: 0; overflow-y: auto; padding-inline: var(--gutter-mobile); }
+@media screen and (min-width: 750px) { .drawer__body { padding-inline: var(--gutter-desktop); } }
+.drawer__foot { padding: 1.5rem var(--gutter-mobile) 2.5rem; border-top: 1px solid var(--hairline-soft); }
+@media screen and (min-width: 750px) { .drawer__foot { padding-inline: var(--gutter-desktop); } }
+
+/* La cruz de cierre va en la esquina superior derecha del pop up, con área de
+   pulsación ancha para que se pueda cerrar con el dedo. */
+.drawer__close {
+  display: inline-flex; align-items: center; justify-content: center;
+  flex: none;
+  width: 4rem; height: 4rem;
+  margin: -0.5rem -0.5rem -0.5rem 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+.drawer__close svg { width: 2rem; height: 2rem; }
+@media (hover: hover) { .drawer__close:hover { background: var(--ink); color: var(--paper); } }
+.drawer__close:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+/* ── 9 · Portada ────────────────────────────────────────────────────────────────
+   El logo es lo único que hay en el héroe: es el PNG de
+   PNG externo, con canal alfa, así que se apoya directamente en
+   el papel, sin caja ni velo. Debajo del logo, el antetítulo y un enlace; las
+   prendas van en `#portada-novedades`.
+
+   Para poner una foto detrás, añade una regla `background` a `.lf-hero` con la
+   ruta de la imagen y vuelve `.lf-hero__ov` al markup.
+   ──────────────────────────────────────────────────────────────────────── */
+.section-lf-hero { margin: 0; }
+
+.lf-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.6rem;
+  min-height: 42vh;
+  padding: 2.4rem var(--gutter-mobile);
+  text-align: center;
+}
+
+.lf-hero__logo {
+  display: block;
+  width: min(34%, 380px);
+  height: auto;
+}
+
+.lf-hero__eyebrow {
+  margin: 0;
+  color: var(--text);
+  font-size: 1.1rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.lf-hero__actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 1rem; }
+
+.lf-hero__actions .button { min-height: 4.4rem; padding-inline: 2.2rem; }
+
+/* Franja de avisos: separa el héroe de la rejilla y quita la sensación de
+   pantalla vacía. */
+.promise-strip {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.8rem 3rem;
+  padding: 1.6rem var(--gutter-mobile);
+  border-block: 1px solid var(--line, rgb(18 18 18 / 12%));
+  text-align: center;
+}
+.promise-strip p { margin: 0; font-size: 1.2rem; letter-spacing: 0.04em; text-transform: uppercase; }
+@media screen and (max-width: 749px) { .promise-strip { gap: 0.8rem 1.6rem; } .promise-strip p { font-size: 1.1rem; } }
+
+@media screen and (min-width: 750px) {
+  .lf-hero { min-height: 46vh; padding-inline: var(--gutter-desktop); }
+}
+
+/* ── 10 · Secciones y rejilla ─────────────────────────────────────────────────── */
+.section { padding-top: 21px; padding-bottom: 27px; }
+@media screen and (min-width: 750px) {
+  .section { padding-top: 28px; padding-bottom: 36px; }
+}
+
+/* El título se queda pegado al scrolling. */
+.section-header { position: sticky; margin-bottom: 0; }
+.section-header .title { margin: 0; }
+
+.title-wrapper { padding-top: 1rem; }
+.title { font-size: 2rem; text-transform: uppercase; }
+@media screen and (min-width: 750px) { .title { font-size: 2.4rem; } }
+
+.collection { padding-top: 12px; padding-bottom: 27px; }
+@media screen and (min-width: 750px) {
+  .collection { padding-top: 14px; padding-bottom: 36px; }
+}
+
+.grid {
+  display: grid;
+  gap: var(--gap-mobile);
+}
+@media screen and (min-width: 750px) { .grid { gap: var(--gap-desktop); } }
+
+.grid--2-col-tablet-down { grid-template-columns: repeat(2, 1fr); }
+@media screen and (min-width: 990px) { .grid--4-col-desktop { grid-template-columns: repeat(4, 1fr); } }
+
+/* En la portada las prendas van centradas y con un ancho máximo: si el catálogo
+   tiene menos prendas que huecos, se quedan en el medio en lugar de pegarse a la
+   izquierda dejando un bloque vacío al lado. */
+.collection .grid {
+  width: 100%;
+  max-width: 90rem;
+  margin-inline: auto;
+  padding-inline: var(--gutter-mobile);
+  grid-template-columns: repeat(auto-fit, minmax(min(21rem, 100%), 1fr));
+}
+@media screen and (min-width: 750px) { .collection .grid { padding-inline: var(--gutter-desktop); } }
+.collection > .grid > li { max-width: 26rem; width: 100%; justify-self: center; }
+
+/* ── 11 · Tarjeta ────────────────────────────────────────────────────────────────
+   Cada foto se muestra entera, sin recorte, y con su proporción real: las
+   portadas son 667×800 y las fotos de `images/` verticales de 811×1440. Recortar
+   a cuadrado cortaría la prenda por el medio. La segunda imagen aparece al pasar
+   el ratón y sí cubre la caja.
+   ──────────────────────────────────────────────────────────────────────── */
+.card-wrapper { position: relative; }
+
+/* La caja de la foto lleva las esquinas redondeadas: así la prenda se separa
+   del papel y el velo de "agotado" y la etiqueta siguen el mismo contorno. */
+.card__inner {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-media);
+  background: var(--paper);
+}
+
+.card__media { position: relative; }
+/* `height: auto` es imprescindible: los atributos `width`/`height` del `<img>`
+   se aplican como pistas de presentación y pisarían el `aspect-ratio`. */
+.media img { width: 100%; height: auto; }
+.media img + img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.3s; }
+@media (hover: hover) {
+  .card-wrapper:hover .media img + img { opacity: 1; }
+}
+
+/* Velo blanco con la etiqueta negra: así marca "agotado" la referencia. */
+.sold-out {
+  position: absolute; inset: 0; z-index: 2;
+  display: flex; align-items: center; justify-content: center;
+  background-color: var(--wash);
+}
+.sold-out p {
+  padding: 0 5px;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 1rem;
+  text-transform: uppercase;
+}
+@media screen and (min-width: 750px) { .sold-out p { font-size: 1.5rem; } }
+
+.card__content { display: flex; flex-direction: column; gap: 0.2rem; padding-top: 0.8rem; }
+
+.card__heading { text-align: left !important; font-size: 11px !important; font-weight: 400; }
+@media screen and (min-width: 750px) { .card__heading { font-size: 15px !important; } }
+
+.card-information { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; text-align: left; }
+.card-information .vendor { display: none; }
+.card-information .price { font-size: 12px !important; font-variant-numeric: tabular-nums; white-space: nowrap; }
+@media screen and (min-width: 750px) { .card-information .price { font-size: 14px !important; } }
+.card-information .price s { opacity: 0.5; }
+.card-information .price .sale { color: var(--ink); }
+
+.card__badge {
+  position: absolute; top: 1rem; right: 1rem; z-index: 2;
+  border-radius: var(--radius-badge);
+  background: var(--ink);
+  color: var(--paper);
+  padding: 0.2rem 0.8rem;
+  font-size: 1rem;
+  text-transform: uppercase;
+}
+.card__badge:empty { display: none; }
+
+/* ── 12 · Añadir rápido ──────────────────────────────────────────────────────────
+   Las tallas flotan sobre la foto, sin marco: son píldoras claras con fondo
+   difuminado, al estilo de las fichas de Apple.
+   ──────────────────────────────────────────────────────────────────────── */
+.add-to-cart-container {
+  position: absolute;
+  inset-inline: 0.6rem;
+  bottom: 0.6rem;
+  z-index: 3;
+  opacity: 0;
+  transform: translateY(0.5rem);
+  transition: opacity 0.2s, transform 0.2s;
+}
+@media (hover: hover) {
+  .card-wrapper:hover .add-to-cart-container,
+  .card-wrapper:focus-within .add-to-cart-container { opacity: 1; transform: none; }
+}
+@media (hover: none) { .add-to-cart-container { opacity: 1; transform: none; } }
+
+.add-to-cart-sizes { display: flex; flex-wrap: wrap; gap: 0.4rem; padding: 0; }
+
+/* Las tallas van como píldoras claras y translúcidas, al estilo de las fichas de
+   Apple: sin borde duro, con el fondo difuminado para separarse de la foto y un
+   relleno oscuro al pasar por encima. */
+.add-to-cart-sizes button {
+  flex: 1;
+  min-width: 2.2rem;
+  padding: 0.9rem 0.4rem;
+  border: 0;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 72%);
+  box-shadow: inset 0 0 0 1px rgb(18 18 18 / 10%);
+  color: var(--ink);
+  font-size: 1.2rem;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+}
+@media (hover: hover) {
+  .add-to-cart-sizes button { backdrop-filter: blur(8px); }
+  .add-to-cart-sizes button:hover:not(:disabled) { background: var(--ink); color: var(--paper); box-shadow: none; }
+  .add-to-cart-sizes button:hover:not(:disabled):active { transform: scale(0.94); }
+}
+.add-to-cart-sizes button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.add-to-cart-sizes button:disabled { color: rgb(18 18 18 / 30%); cursor: not-allowed; text-decoration: line-through; }
+
+.add-to-cart-note { padding: 0.2rem 0.5rem; background: #000000; color: var(--neon); font-size: 1rem; }
+.add-to-cart-note[data-kind="error"] { color: #ff6b6b; }
+.add-to-cart-note:empty { display: none; }
+
+/* ── 13 · Botones ──────────────────────────────────────────────────────────────── */
+.button {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+  min-height: 4rem;
+  padding: 1rem 2.5rem;
+  border: 2px solid #ffffff;
+  border-radius: var(--radius);
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 1.3rem;
+  text-transform: uppercase;
+  transition: opacity 0.2s;
+}
+.button:hover { opacity: 0.8; }
+.button--tertiary { border: none; background: none; color: var(--text); padding-inline: 0; }
+.button[disabled] { opacity: 0.4; cursor: not-allowed; }
+
+/* ── 14 · Catálogo ─────────────────────────────────────────────────────────────── */
+.catalog { display: grid; gap: 2rem; }
+@media screen and (min-width: 990px) { .catalog { grid-template-columns: 15rem 1fr; gap: 4rem; } }
+
+/* Sin facetas (una búsqueda que no devuelve nada) la rejilla ocupa el ancho. */
+@media screen and (min-width: 990px) { .catalog--sin-facetas { grid-template-columns: 1fr; } }
+
+/* Cuántas prendas quedan tras los filtros. */
+.catalog__count { margin-bottom: 1.2rem; font-size: 1.2rem; color: var(--muted); }
+@media screen and (min-width: 990px) { .catalog__count { margin-bottom: 1.6rem; } }
+
+.facets__display { background: var(--paper); padding: 1.5rem 0; margin-bottom: 2rem; }
+@media screen and (min-width: 990px) {
+  .facets__display { position: sticky; top: 6rem; align-self: start; border-top: 0.1rem solid var(--hairline); border-bottom: 0.1rem solid var(--hairline); padding-block: 0; margin-bottom: 0; }
+}
+
+.facet { border-bottom: 1px solid var(--hairline-soft); }
+@media screen and (min-width: 990px) { .facet { border-bottom: 0; } }
+.facet__title { padding: 1rem 0 0.5rem; font-size: 1.2rem; text-transform: uppercase; }
+.facet__content { padding-bottom: 1rem; }
+@media screen and (min-width: 990px) {
+  .facet__title { border-bottom: 1px solid var(--hairline-soft); margin-bottom: 0.75rem; padding: 1.5rem 0 0.75rem; }
+}
+.facet li a, .facet li button { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-block: 0.3rem; font-size: 1.3rem; text-transform: uppercase; }
+.facet li [aria-pressed="true"], .facet li [aria-current="true"] { font-weight: 700; }
+.facet li a:hover, .facet li button:hover { opacity: 0.5; }
+
+.chip { border: 1px solid var(--text); border-radius: var(--radius-badge); padding: 0.3rem 1rem; font-size: 1.1rem; text-transform: uppercase; }
+.chip:hover { background: var(--ink); color: var(--paper); }
+.chip:hover * { color: var(--paper); }
+
+.swatch { display: inline-block; width: 1.2rem; height: 1.2rem; border-radius: 999px; border: 1px solid var(--text); }
+
+/* ── 15 · Ficha de producto ────────────────────────────────────────────────────── */
+.product { padding-top: 2rem; }
+  .product__grid { display: grid; gap: 2.5rem; }
+  @media screen and (min-width: 750px) { .product__grid { grid-template-columns: 0.9fr 1fr; gap: 3rem; } }
+  @media screen and (min-width: 990px) { .product__grid { grid-template-columns: 0.8fr 1fr; gap: 4rem; } }
+
+/* La foto grande se ve entera, con su proporción original y sin recortes
+   (como mucho ocupa el 88 % del alto de la pantalla). */
+  .product__media-main { overflow: hidden; border-radius: var(--radius-media); background: var(--paper); max-width: 42rem; cursor: zoom-in; }
+  .product__media-main img { display: block; width: 100%; height: auto; max-height: 70vh; object-fit: cover; image-rendering: auto; transition: transform 0.25s ease; }
+  .product__media-main:hover img { transform: scale(1.03); }
+.product__media { display: flex; flex-direction: column; gap: 0.8rem; }
+
+/* Miniaturas: mismas medidas y proporción que la grande, con la marcada en negro. */
+.thumbnail-list { gap: 0.6rem; }
+.thumbnail-list__item { flex: none; }
+
+  .thumbnail { display: block; width: 6.5rem; padding: 0; border: 1px solid var(--hairline-soft); border-radius: 8px; background: var(--paper); cursor: pointer; overflow: hidden; transition: border-color 0.2s ease, opacity 0.2s ease; }
+  .thumbnail img { display: block; width: 100%; height: 8.67rem; object-fit: cover; background: var(--paper); }
+/* Ajustes globales de la galería de la tienda real: aquí solo se deja claro que
+   la miniatura va sin sombra. */
+.global-media-settings { border-radius: 8px; }
+.global-media-settings--no-shadow { box-shadow: none; }
+@media (hover: hover) { .thumbnail:hover { opacity: 0.75; } }
+.thumbnail[aria-current="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+.thumbnail:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+.product__info { min-width: 0; }
+
+.product__title { font-size: 2.4rem; text-transform: uppercase; }
+@media screen and (min-width: 750px) { .product__title { font-size: 3rem; } }
+
+.product__price { display: flex; align-items: baseline; gap: 0.8rem; margin-top: 0.8rem; font-variant-numeric: tabular-nums; }
+.product__price .now { font-size: 1.8rem; font-weight: 700; }
+.product__price s { opacity: 0.5; }
+.product__price .badge-sale { background: var(--neon); color: #000000; padding: 0.1rem 0.5rem; font-size: 1.1rem; text-transform: uppercase; }
+
+.product__summary { margin-top: 1rem; font-size: 1.3rem; color: var(--muted); }
+.product__ship { margin-top: 0.5rem; font-size: 1.2rem; color: var(--muted); }
+
+.product-form__input { margin-top: 2rem; }
+.product-form__label { display: flex; justify-content: space-between; gap: 1rem; margin-bottom: 0.75rem; font-size: 1.2rem; text-transform: uppercase; }
+
+/* Tallas en píldoras, como en la referencia: un `input[type=radio]` real con su
+   `label`, así el teclado y los lectores de pantalla ya funcionan solos. El
+   radio va transparente encima de la píldora, que es lo que se ve. */
+.variant-pills { margin-top: 2rem; border: 0; padding: 0; }
+.variant-pills legend { padding: 0; }
+.variant-pills__options { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+
+.variant-pill { position: relative; display: block; }
+.variant-pill input {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  margin: 0; padding: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.variant-pill label {
+  display: block;
+  min-width: 5.6rem;
+  padding: 0.8rem 1.4rem;
+  border: 1px solid var(--text);
+  border-radius: 999px;
+  background: #ffffff;
+  font-size: 1.3rem;
+  text-align: center;
+  cursor: pointer;
+}
+.variant-pill input:hover + label { background: #f4f4f4; }
+.variant-pill input:checked + label { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+.variant-pill input:focus-visible + label { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+/* La talla agotada se ve tachada y no se puede elegir. */
+.variant-pill input:disabled { cursor: not-allowed; }
+.variant-pill input:disabled + label { color: var(--muted); text-decoration: line-through; cursor: not-allowed; }
+
+.quantity { display: inline-flex; align-items: center; border: 1px solid var(--text); border-radius: var(--radius); }
+.quantity__button { padding: 0.6rem 1rem; font-size: 1.4rem; }
+.quantity__button[disabled] { opacity: 0.3; cursor: not-allowed; }
+.quantity__input { width: 3rem; border: none; background: none; text-align: center; font: inherit; color: inherit; appearance: textfield; }
+
+.product-form__submit { position: relative; width: 100%; min-height: 5rem; border: 2px solid #ffffff; background: #000000; }
+.product-form__submit span { position: relative; color: #ffffff; font-size: 1.5rem; text-transform: uppercase; }
+.product-form__submit:hover { opacity: 0.85; }
+.product-form__submit[disabled] { opacity: 1; cursor: not-allowed; }
+.product-form__submit[disabled] span { color: rgb(255 255 255 / 50%); }
+
+/* Botonera de pago exprés: es el contenedor que Shopify rellena con el botón de
+   Shop Pay. Aquí queda el hueco preparado, debajo del de añadir al carrito. */
+.wallet-button-wrapper { display: flex; flex-direction: column; gap: 0.8rem; margin-top: 1rem; }
+.wallet-button-wrapper slot { display: block; }
+.wallet-button-wrapper slot:empty { display: none; }
+.wallet-button-fade-in { animation: wallet-button-fade-in 0.3s ease both; }
+@keyframes wallet-button-fade-in { from { opacity: 0; transform: translateY(0.4rem); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .wallet-button-fade-in { animation: none; } }
+
+.product__note { margin-top: 1rem; font-size: 1.2rem; color: var(--muted); }
+.product__note[data-kind="ok"] { color: var(--neon); }
+.product__note[data-kind="error"] { color: #d302b5; }
+
+/* Acordeón: filete arriba y abajo, sin separadores intermedios. */
+.accordion { margin-top: 3rem; border-top: 0.1rem solid var(--hairline); border-bottom: 0.1rem solid var(--hairline); }
+.accordion details + details { border-top: 1px solid var(--hairline-soft); }
+.accordion summary { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-block: 1.2rem; font-size: 1.3rem; text-transform: uppercase; }
+.accordion summary::after { content: "+"; }
+.accordion details[open] summary::after { content: "−"; }
+.accordion .accordion__content { padding-bottom: 1.2rem; font-size: 1.3rem; color: var(--muted); white-space: pre-line; }
+
+/* ── 16 · Carrito ──────────────────────────────────────────────────────────────── */
+.cart__line { display: flex; gap: 1.5rem; padding-block: 2rem; border-bottom: 1px solid var(--hairline-soft); }
+.cart__line img { width: 8rem; height: auto; flex-shrink: 0; border-radius: 6px; background: var(--paper); }
+.cart__line-body { display: flex; flex: 1; flex-direction: column; gap: 0.4rem; min-width: 0; }
+.cart__line-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.cart__line-title { font-size: 1.3rem; text-transform: uppercase; }
+.cart__line-price { font-size: 1.3rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.cart__line-variant { display: flex; align-items: center; gap: 0.6rem; font-size: 1.2rem; color: var(--muted); }
+.cart__line-actions { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-top: 0.8rem; }
+.cart-remove-button { font-size: 1.1rem; text-transform: uppercase; text-decoration: underline; }
+
+.cart__layout { display: grid; gap: 3rem; padding-block: 3rem; }
+@media screen and (min-width: 990px) { .cart__layout { grid-template-columns: 1fr 24rem; gap: 5rem; } }
+
+.cart__totals { padding: 2rem; border: 1px solid var(--hairline); }
+.cart__totals dl { display: grid; gap: 0.8rem; font-size: 1.3rem; }
+.cart__totals dl > div { display: flex; justify-content: space-between; gap: 1rem; }
+.cart__totals dd { margin: 0; font-variant-numeric: tabular-nums; }
+.cart__totals .grand { display: flex; align-items: baseline; justify-content: space-between; margin-top: 1.5rem; padding-top: 1.2rem; border-top: 0.1rem solid var(--hairline); }
+.cart__totals .grand .amount { font-size: 2rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* ── 17 · Vacío ─────────────────────────────────────────────────────────────────── */
+.empty-state { display: flex; flex-direction: column; align-items: center; gap: 1.5rem; padding: 6rem 1.5rem; text-align: center; }
+.empty-state p { color: var(--muted); }
+
+/* ── 18 · Pie ─────────────────────────────────────────────────────────────────────
+   Fondo negro, filete superior negro, dos filas: bloques y luego pagos.
+   ──────────────────────────────────────────────────────────────────────── */
+.footer {
+  position: relative;
+  margin-top: 36px;
+  padding-top: 27px;
+  padding-bottom: 27px;
+  border-top: 1px solid #000000;
+  background-color: var(--ink);
+}
+@media screen and (min-width: 750px) {
+  .footer { margin-top: 48px; padding-top: 36px; padding-bottom: 36px; }
+}
+
+.footer__content-top { margin-top: 0; }
+.footer__blocks-wrapper { display: grid; gap: 2.5rem; grid-template-columns: 1fr; }
+@media screen and (min-width: 750px) { .footer__blocks-wrapper { grid-template-columns: repeat(2, 1fr); } }
+@media screen and (min-width: 990px) { .footer__blocks-wrapper { grid-template-columns: repeat(4, 1fr); } }
+
+.footer-block__heading { font-size: 1.3rem; text-transform: uppercase; color: var(--paper); }
+.footer-block__details-content { margin-top: 1rem; font-size: 1.3rem; color: var(--paper); }
+/* El reset de arriba da `color` a los `p` por su cuenta, así que sin esto el
+   texto del pie salía en tinta sobre el fondo negro. Con `inherit` toma el del
+   bloque, que es blanco. */
+.footer-block__details-content p { color: inherit; }
+.footer-block li + li { margin-top: 0.6rem; }
+/* Los iconos van en horizontal: el margen entre ellos los descentraba. */
+.footer-block .list-social li + li { margin-top: 0; }
+.footer-block a { color: var(--paper); font-size: 1.3rem; }
+.footer-block a:hover { opacity: 0.5; }
+
+.footer__content-bottom { margin-top: 3rem; }
+.footer__content-bottom-wrapper { display: flex; flex-direction: column; gap: 1.5rem; }
+@media screen and (min-width: 750px) {
+  .footer__content-bottom-wrapper { flex-direction: row; align-items: center; justify-content: space-between; }
+}
+
+/* Los logos de pago llevan su propio color, así que van a 60x40 y no al
+   tamaño de los iconos de línea. */
+.footer__payment ul { display: flex; flex-wrap: wrap; align-items: center; gap: 0.8rem 1.4rem; }
+.footer__payment .icon { width: 60px; height: 40px; }
+
+.footer__copyright { display: flex; flex-direction: column; gap: 0.3rem; font-size: 1.1rem; }
+.footer__copyright small { font-size: 1.1rem; }
+.footer__copyright .copyright-quiet { color: #dcdcdc; }
+.footer__copyright a { color: inherit; }
+
+/* ── 19 · Animaciones ─────────────────────────────────────────────────────────── */
+.fade-in { animation: rb-fade-in 2.5s cubic-bezier(0.39, 0.575, 0.565, 1) both; }
+@keyframes rb-fade-in { 0% { opacity: 0; } 100% { opacity: 1; } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+</style>
+</head>
+<body>
+
+<!-- ══ 00 · Pop up de bienvenida + aviso legal/cookies ════════════════════ -->
+<div id="welcome-modal" style="position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;padding:1.5rem;">
+  <div style="position:absolute;inset:0;background:rgba(0,0,0,0.7);" data-welcome-close></div>
+  <div role="dialog" aria-modal="true" aria-labelledby="welcome-title" style="position:relative;width:100%;max-width:44rem;background:#fff;box-shadow:0 20px 60px rgba(0,0,0,0.4);max-height:90vh;overflow-y:auto;">
+    <button type="button" data-welcome-close aria-label="Cerrar" style="position:absolute;top:1rem;right:1rem;padding:0.6rem;cursor:pointer;">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M4 4l10 10M14 4L4 14" stroke="currentColor" stroke-width="1.4"/></svg>
+    </button>
+    <div style="padding:2.4rem;">
+      <div style="text-align:center;margin-bottom:2rem;">
+        <h2 id="welcome-title" style="font-size:2rem;text-transform:uppercase;letter-spacing:0.16em;margin:0 0 0.8rem;">Bienvenido a REBELYN</h2>
+        <p style="margin:0;color:rgb(32 32 32 / 75%);font-size:1.35rem;">Inicia sesión con tu correo o entra como invitado</p>
+      </div>
+      <div style="display:flex;gap:0.5rem;margin-bottom:2rem;border-bottom:1px solid rgba(32,32,32,0.2);">
+        <button type="button" id="welcome-tab-login" style="flex:1;padding-bottom:1rem;text-transform:uppercase;letter-spacing:0.12em;font-size:1.3rem;border-bottom:2px solid #121212;margin-bottom:-1px;cursor:pointer;">Iniciar sesión</button>
+        <button type="button" id="welcome-tab-guest" style="flex:1;padding-bottom:1rem;text-transform:uppercase;letter-spacing:0.12em;font-size:1.3rem;color:rgb(32 32 32 / 60%);cursor:pointer;">Entrar como invitado</button>
+      </div>
+
+      <div id="welcome-panel-login">
+        <div style="margin-bottom:1.5rem;">
+          <label for="welcome-email" style="display:block;font-size:1.2rem;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.6rem;">Correo electrónico</label>
+          <input id="welcome-email" type="email" required style="width:100%;padding:0.9rem;border:1px solid #121212;border-radius:8px;font:inherit;" autocomplete="email">
+        </div>
+        <div style="margin-bottom:1.5rem;">
+          <label for="welcome-password" style="display:block;font-size:1.2rem;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.6rem;">Contraseña</label>
+          <input id="welcome-password" type="password" required style="width:100%;padding:0.9rem;border:1px solid #121212;border-radius:8px;font:inherit;" autocomplete="current-password">
+        </div>
+        <label style="display:flex;align-items:flex-start;gap:0.8rem;cursor:pointer;margin-bottom:1.5rem;">
+          <input id="welcome-notifications" type="checkbox" checked style="margin-top:0.2rem;width:18px;height:18px;">
+          <span style="color:rgb(32 32 32 / 75%);font-size:1.3rem;">Quiero recibir notificaciones por correo sobre novedades, rebajas, nuevos productos y ofertas.</span>
+        </label>
+        <button type="button" id="welcome-login-btn" class="button" style="width:100%;min-height:4.4rem;">Iniciar sesión</button>
+        <p style="text-align:center;margin:1.4rem 0 0;font-size:1.3rem;color:rgb(32 32 32 / 75%);">¿No tienes cuenta? <a href="#/cuenta" style="text-decoration:underline;">Regístrate</a></p>
+      </div>
+
+      <div id="welcome-panel-guest" style="display:none;">
+        <p style="text-align:center;color:rgb(32 32 32 / 75%);font-size:1.35rem;margin:0 0 1.5rem;">Puedes navegar y comprar como invitado. No necesitarás crear una cuenta para realizar tu pedido.</p>
+        <button type="button" id="welcome-guest-btn" class="button" style="width:100%;min-height:4.4rem;">Entrar como invitado</button>
+      </div>
+
+      <div style="margin-top:2.4rem;padding-top:2rem;border-top:1px solid rgba(32,32,32,0.2);text-align:center;font-size:1.2rem;color:rgb(32 32 32 / 70%);">
+        <p style="margin:0;">Al continuar aceptas las <a href="condiciones.html" style="text-decoration:underline;">Condiciones generales de compra</a>, la <a href="privacidad.html" style="text-decoration:underline;">Política de privacidad</a> y el uso de <a href="cookies.html" style="text-decoration:underline;">cookies</a>.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Aviso de cookies + enlace legal, aparece tras cerrar el pop up -->
+<div id="legal-notice" style="position:fixed;left:0;right:0;bottom:0;z-index:50;padding:1rem 1.5rem;display:none;">
+  <div style="max-width:92rem;margin:0 auto;background:#fff;border:1px solid #121212;box-shadow:0 -8px 40px rgba(0,0,0,0.12);padding:1.5rem 2rem;display:flex;flex-wrap:wrap;align-items:center;gap:1rem;justify-content:space-between;">
+    <p style="margin:0;font-size:1.35rem;max-width:60rem;">Usamos cookies propias necesarias para que la tienda funcione. Más info en la <a href="cookies.html" style="text-decoration:underline;">política de cookies</a> y el <a href="avisolegal.html" style="text-decoration:underline;">aviso legal</a>.</p>
+    <button type="button" id="legal-notice-accept" class="button" style="min-height:4rem;">Aceptar</button>
+  </div>
+</div>
+
+<!--
+  ============================================================================
+  REBELYN · MAQUETA EN UN SOLO ARCHIVO
+  ----------------------------------------------------------------------------
+  Este es el único archivo del prototipo: HTML, estilos, datos y JavaScript
+  viven aquí dentro, en bloques separados y comentados. Se llama `index.html`
+  para poder abrir la carpeta y que cargue directamente, y funciona sin
+  servidor, sin base de datos y sin internet: las imágenes son locales, dentro
+  de `img/`.
+
+  MAPA DEL ARCHIVO, de arriba abajo
+  ----------------------------------------------------------------------------
+    · <style> (en <head>)    → todos los estilos; los tokens están al principio
+    · #zona-fondo             → fondo fijo
+    · #zona-cinta             → cinta de texto
+    · #zona-cabecera          → menú, marca centrada e iconos
+    · #zona-buscador          → desplegable de búsqueda
+    · #zona-contenido         → <main id="app">; aquí se pinta cada vista
+    · #zona-pie               → pie con bloques, redes y pagos
+     · #zona-carrito           → panel lateral del carrito
+     · <script> datos          → window.REBELYN; lo genera npm run prototipo:datos
+     · <script> app            → vistas, filtros, carrito y buscador
+
+  PARA EDITAR
+  ----------------------------------------------------------------------------
+    Textos o imágenes        → el HTML de las zonas
+    Colores, tipografía,
+    medidas                  → los tokens de :root en el <style>
+    El diseño de un bloque   → busca su comentario numerado en el <style>
+    El catálogo              → npm run prototipo:datos (nunca a mano)
+    Una vista nueva          → views.nueva y su ruta en render(), en el app
+    Comportamiento           → el <script> app, ordenado por secciones
+
+  PÁGINAS (enrutadas por hash)
+  ----------------------------------------------------------------------------
+    #/                                   → portada
+    #/tienda                             → catálogo con filtros
+    #/tienda?q=crema&color=Crema&talla=S → catálogo filtrado
+    #/producto/chandal-invierno-crema   → ficha de producto
+    #/carrito                            → carrito
+    #/checkout                           → resumen del pago
+    #/cuenta                             → marcador de posición
+
+  IMÁGENES
+  ----------------------------------------------------------------------------
+     Las fotos de los chandales y los logos vienen de `images/` en la raíz del
+     proyecto y están copiados en `img/`. La portada de cada chandal es un PNG de
+     667×800 y el resto son verticales de 811×1440: tarjeta y ficha las enseñan
+     enteras, sin recortar.
+  ============================================================================
+
+  NOTA
+  ----------------------------------------------------------------------------
+  Nada de esto va tal cual a producción: aquí los precios y el carrito viven en
+  el navegador. Cuando el diseño esté cerrado, se traslada a
+  `apps/store/src/app/globals.css` y `packages/ui`. Ese es el formato que
+  usaremos en producción; hasta entonces seguimos trabajando aquí.
+  ============================================================================
+-->
+
+<!--
+  Cada bloque de la página va dentro de su propio <section class="zona">.
+  Las zonas usan `display: contents`, así que no cambian ni un píxel del
+  layout, pero en el inspector cada elemento se puede buscar por su id:
+  #zona-cabecera, #zona-pie, #zona-carrito… y dentro, #cabecera-logo,
+  #carrito-contador, etc.
+-->
+
+<!-- ══ 01 · Fondo fijo ════════════════════════════════════════════════════
+     Dos capas que no se mueven, por debajo del contenido con z-index negativo.
+     ═════════════════════════════════════════════════════════════════════ -->
+<section class="zona" id="zona-fondo" aria-label="Fondo">
+  <div class="bgimg" data-bg></div>
+  <div class="siteblur"></div>
+</section>
+
+<!-- ══ 02 · Cinta de texto ════════════════════════════════════════════════ -->
+<section class="zona" id="zona-cinta" aria-label="Cinta de texto">
+  <div class="running-text" id="cinta" aria-hidden="true">
+    <div class="running-text__container" data-marquee></div>
+  </div>
+</section>
+
+<!-- ══ 03 · Cabecera: menú · marca centrada · iconos ═════════════════════ -->
+<section class="zona" id="zona-cabecera" aria-label="Cabecera">
+  <div class="header-wrapper">
+    <header class="header page-width">
+
+      <!-- Carril izquierdo: burger en móvil, navegación en escritorio -->
+      <div class="header__start">
+        <button class="header__icon header__icon--menu menu-drawer-container" type="button" data-open="menu" aria-label="Abrir menú" id="cabecera-menu">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+            <path d="M1 5h20M1 11h20M1 17h20" stroke="currentColor" stroke-width="1.5"/>
+          </svg>
+        </button>
+
+        <dialog class="drawer drawer--left" id="drawer-menu" aria-labelledby="drawer-menu-title">
+          <div class="drawer__inner">
+            <div class="drawer__head">
+              <h2 class="drawer__title" id="drawer-menu-title">Menú</h2>
+              <button class="drawer__close" type="button" data-close aria-label="Cerrar menú">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                  <path d="M4 4l12 12M16 4L4 16" stroke="currentColor" stroke-width="1.4"/>
+                </svg>
+              </button>
+            </div>
+
+            <div class="drawer__body">
+              <ul>
+                <li><a class="menu-drawer__menu-item" href="#/tienda">Shop</a></li>
+                <li><a class="menu-drawer__menu-item" data-view-link href="#/envios">Envíos</a></li>
+                <li><a class="menu-drawer__menu-item" data-view-link href="#/devoluciones">Devoluciones</a></li>
+                <li><a class="menu-drawer__menu-item" data-view-link href="#/tallas">Tallas</a></li>
+                <li><a class="menu-drawer__menu-item" data-view-link href="#/contacto">Contacto</a></li>
+              </ul>
+
+              <div class="menu-drawer__utility-links">
+                <a class="menu-drawer__account" href="#/cuenta">Log in</a>
+                <ul class="list-social" id="social-menu">
+                  <li class="list-social__item">
+                    <a href="https://www.instagram.com/rebelyn.off/" aria-label="Instagram" rel="noopener">
+                      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                        <rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/>
+                      </svg>
+                    </a>
+                  </li>
+                  <li class="list-social__item">
+                    <a href="https://www.tiktok.com/@rebelyn.off" aria-label="TikTok" rel="noopener">
+                      <svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <path d="M16.5 3c.2 1.7 1.2 3.1 2.9 3.9.7.3 1.5.5 2.3.5v3c-1.6 0-3-.4-4.3-1.2v5.7c0 3.3-2.5 5.9-5.8 5.9-3.2 0-5.8-2.6-5.8-5.8 0-3.3 2.7-5.9 6-5.8v3.1c-.3-.1-.7-.2-1-.2-1.7 0-3 1.3-3 2.9s1.3 3 3 3c1.7 0 2.9-1.4 2.9-3.1V3h2.8Z"/>
+                      </svg>
+                    </a>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </dialog>
+
+        <nav class="header__nav" id="cabecera-nav" aria-label="Navegación principal">
+          <a href="#/tienda">Shop</a>
+        </nav>
+      </div>
+
+      <!-- Marca centrada -->
+      <h1 class="header__heading">
+        <a class="header__heading-link" id="cabecera-logo" href="#/">
+          <img class="header__logo" src="https://i.postimg.cc/bvsZCR8m/Rebelyn-giro-3D-lento.gif" alt="REBELYN" width="180" height="71">
+        </a>
+      </h1>
+
+      <!-- Carril derecho -->
+      <div class="header__end">
+        <ul class="list-social header__social" id="redes-cabecera">
+          <li class="list-social__item">
+            <a href="https://www.instagram.com/rebelyn.off/" aria-label="Instagram" rel="noopener">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                <rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/>
+              </svg>
+            </a>
+          </li>
+          <li class="list-social__item">
+            <a href="https://www.tiktok.com/@rebelyn.off" aria-label="TikTok" rel="noopener">
+              <svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M16.5 3c.2 1.7 1.2 3.1 2.9 3.9.7.3 1.5.5 2.3.5v3c-1.6 0-3-.4-4.3-1.2v5.7c0 3.3-2.5 5.9-5.8 5.9-3.2 0-5.8-2.6-5.8-5.8 0-3.3 2.7-5.9 6-5.8v3.1c-.3-.1-.7-.2-1-.2-1.7 0-3 1.3-3 2.9s1.3 3 3 3c1.7 0 2.9-1.4 2.9-3.1V3h2.8Z"/>
+              </svg>
+            </a>
+          </li>
+        </ul>
+
+        <button class="header__icon" type="button" data-open="search" aria-label="Buscar" id="cabecera-buscar">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+            <circle cx="9.5" cy="9.5" r="6.5" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M14.5 14.5L20 20" stroke="currentColor" stroke-width="1.5"/>
+          </svg>
+        </button>
+
+        <a class="header__icon header__icon--account" href="#/cuenta" aria-label="Cuenta" id="cabecera-cuenta">
+          <svg width="18" height="19" viewBox="0 0 18 19" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true">
+            <circle cx="9" cy="6" r="3.5"/><path d="M2 18c0-3.3 3.1-5.5 7-5.5s7 2.2 7 5.5"/>
+          </svg>
+        </a>
+
+        <button class="header__icon header__icon--cart" type="button" data-open="cart" aria-label="Carrito" id="cabecera-carrito">
+          <svg viewBox="0 0 51 62" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M6 20h39l-4 34a5 5 0 0 1-5 4.5H15A5 5 0 0 1 10 54L6 20Z"/>
+            <path d="M18 26V13a7.5 7.5 0 0 1 15 0v13"/>
+          </svg>
+          <span class="cart-count-bubble" id="carrito-contador" data-cart-count data-empty="true"><span>0</span></span>
+        </button>
+      </div>
+    </header>
+
+    <!-- ══ 04 · Buscador desplegable ══════════════════════════════════════════
+         Va dentro de `.header-wrapper` a propósito: como la cabecera es sticky,
+         el desplegable sale de `top: 100%` justo debajo de ella y la sigue al
+         hacer scroll. Si se dejara fuera, su `top: 100%` se mediría desde el
+         alto de la ventana y caería fuera de la pantalla.
+         ──────────────────────────────────────────────────────────────────── -->
+    <section class="zona" id="zona-buscador" aria-label="Buscador">
+      <div class="search-modal__content" id="buscador" data-search-panel hidden>
+    <form class="search" role="search" data-search action="#/tienda">
+      <div class="field">
+        <label class="visually-hidden" for="q">Buscar productos</label>
+        <input class="field__input" id="q" name="q" type="search" placeholder="Buscar" autocomplete="off"
+               role="combobox" aria-expanded="false" aria-controls="search-list" aria-autocomplete="list">
+      </div>
+      <button class="search__button" type="submit" aria-label="Buscar">
+        <svg width="20" height="20" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+          <circle cx="9.5" cy="9.5" r="6.5" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M14.5 14.5L20 20" stroke="currentColor" stroke-width="1.5"/>
+        </svg>
+      </button>
+    </form>
+    <div class="predictive-search" id="search-list" role="listbox" aria-label="Sugerencias" hidden></div>
+      </div>
+    </section>
+  </div>
+</section>
+
+<!-- ══ 05 · Contenido: aquí se pinta cada vista ══════════════════════════ -->
+<section class="zona" id="zona-contenido" aria-label="Contenido">
+  <main class="main" id="app"></main>
+</section>
+
+<!-- ══ 06 · Pie ═══════════════════════════════════════════════════════════ -->
+<section class="zona" id="zona-pie" aria-label="Pie">
+  <footer class="footer">
+    <div class="footer__content-top page-width">
+      <div class="footer__blocks-wrapper">
+
+        <div class="footer-block" id="pie-presentacion">
+          <h2 class="footer-block__heading">Rebelyn</h2>
+          <div class="footer-block__details-content">
+            <p>Rompe con lo común. Combina comodidad y estilo cada día.</p>
+          </div>
+        </div>
+
+        <div class="footer-block" id="pie-ayuda">
+          <h2 class="footer-block__heading">Ayuda</h2>
+          <ul>
+            <li><a data-view-link href="#/envios">Envíos</a></li>
+            <li><a data-view-link href="#/devoluciones">Devoluciones</a></li>
+            <li><a data-view-link href="#/tallas">Tallas</a></li>
+            <li><a data-view-link href="#/contacto">Contacto</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-block" id="pie-privacidad">
+          <h2 class="footer-block__heading">Privacidad</h2>
+          <ul>
+            <li><a href="avisolegal.html">Aviso legal</a></li>
+            <li><a href="privacidad.html">Política de privacidad</a></li>
+            <li><a href="cookies.html">Política de cookies</a></li>
+            <li><a href="condiciones.html">Condiciones generales de compra</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-block footer-block--newsletter" id="pie-redes">
+          <h2 class="footer-block__heading">Síguenos</h2>
+          <ul class="list-social">
+            <li class="list-social__item">
+              <a href="https://www.instagram.com/rebelyn.off/" aria-label="Instagram" rel="noopener">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                  <rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/>
+                </svg>
+              </a>
+            </li>
+            <li class="list-social__item">
+              <a href="https://www.tiktok.com/@rebelyn.off" aria-label="TikTok" rel="noopener">
+                <svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M16.5 3c.2 1.7 1.2 3.1 2.9 3.9.7.3 1.5.5 2.3.5v3c-1.6 0-3-.4-4.3-1.2v5.7c0 3.3-2.5 5.9-5.8 5.9-3.2 0-5.8-2.6-5.8-5.8 0-3.3 2.7-5.9 6-5.8v3.1c-.3-.1-.7-.2-1-.2-1.7 0-3 1.3-3 2.9s1.3 3 3 3c1.7 0 2.9-1.4 2.9-3.1V3h2.8Z"/>
+                </svg>
+              </a>
+            </li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="footer__content-bottom page-width">
+      <div class="footer__content-bottom-wrapper">
+        <div class="footer__column footer__column--info">
+        </div>
+
+        <div class="footer__copyright" id="pie-legal">
+          <small class="copyright__content copyright-quiet">&copy; 2026, <a href="#/">REBELYN</a></small><small class="copyright-quiet"><a href="contactar-desarrollador.html">DISEÑO: Diego Acosta</a></small>
+        </div>
+      </div>
+    </div>
+  </footer>
+</section>
+
+<!-- ══ 07 · Carrito lateral ═══════════════════════════════════════════════ -->
+<section class="zona" id="zona-carrito" aria-label="Carrito">
+  <dialog class="drawer" id="drawer-cart" aria-labelledby="drawer-cart-title">
+    <div class="drawer__inner">
+      <div class="drawer__head">
+        <h2 class="drawer__title" id="drawer-cart-title">Tu carrito</h2>
+        <button class="drawer__close" type="button" data-close aria-label="Cerrar carrito">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <path d="M4 4l12 12M16 4L4 16" stroke="currentColor" stroke-width="1.4"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="drawer__body" data-cart-lines></div>
+
+      <div class="drawer__foot" data-cart-foot hidden>
+        <div class="cart__totals">
+          <dl>
+            <div><dt class="upper">Subtotal</dt><dd data-cart-subtotal>—</dd></div>
+          </dl>
+          <a class="button" style="width:100%; margin-top:1.5rem" href="#/checkout">Finalizar compra</a>
+        </div>
+      </div>
+    </div>
+  </dialog>
+</section>
+
+<!-- ══ 08 · Datos del catálogo ═══════════════════════════════════════════════
+     GENERADO por `npm run prototipo:datos`. Lo que hay entre los dos marcadores
+     se reescribe solo con lo que hay en la base de datos: no editar a mano.
+     ═══════════════════════════════════════════════════════════════════════ -->
+<script id="datos-catalogo">
+/* INICIO DATOS GENERADOS */
+/* Datos reales. GENERADO por scripts/gen-prototype-data.ts: no editar a mano. */
+window.REBELYN = {
+  "store": {
+    "name": "REBELYN",
+    "currency": "EUR",
+    "locale": "es-ES",
+    "announcement": "Nuevo drop de invierno",
+    "contact": {
+      "phone": "632 530 973",
+      "whatsapp": "34632530973",
+      "email": "rebelynoff@gmail.com",
+      "social": {
+        "tiktok": "https://www.tiktok.com/@rebelyn.off",
+        "instagram": "https://www.instagram.com/rebelyn.off/"
+      }
+    }
+  },
+  "categories": [
+    {
+      "name": "Chandales",
+      "slug": "chandales"
+    }
+  ],
+  "products": [
+    {
+      "name": "Chandal de Invierno Burdeos",
+      "slug": "chandal-invierno-burdeos",
+      "summary": "Conjunto de dos piezas en burdeos, con forro de felpa y detalles góticos en cinturilla y puño.",
+      "description": "Tinta derramada sobre el papel. El mismo chandal de siempre en un burdeos mucho más cerrado: mismo forro de felpa por dentro, mismos hombros marcados y ese detalle gótico que asoma en la cinturilla y el puño.\n\nSe vende suelto, sin pack: si el burdeos es tu color, es tu referencia. Y si dudas entre los dos, la crema sigue ahí esperándote.",
+      "details": "80% algodón, 20% poliéster\nForro interior en felpa\nDetalles góticos en cinturilla y puño\nConjunto de dos piezas\nLavado a máquina a 30 °C, secado en plano",
+      "priceCents": 7500,
+      "compareAtCents": null,
+      "category": "chandales",
+      "categoryName": "Chandales",
+      "image": "https://i.postimg.cc/VvGJBfwz/Chandal-burdeos-con-detalles-goticos.png",
+      "hoverImage": "https://i.postimg.cc/vZ9mDL48/chandal-invierno-b-1.jpg",
+      "images": [
+        "https://i.postimg.cc/VvGJBfwz/Chandal-burdeos-con-detalles-goticos.png",
+        "https://i.postimg.cc/vZ9mDL48/chandal-invierno-b-1.jpg",
+        "https://i.postimg.cc/KY28TkM6/chandal-invierno-b-2.jpg"
+      ],
+      "colors": [
+        {
+          "name": "Burdeos",
+          "hex": "#4A1F27"
+        }
+      ],
+      "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL"
+      ],
+      "soldOutSizes": [
+        "XL"
+      ]
+    },
+    {
+      "name": "Chandal de Invierno Crema",
+      "slug": "chandal-invierno-crema",
+      "summary": "Conjunto de dos piezas en crema, forrado en felpa y con costuras góticas a la vista.",
+      "description": "Suave como la primera nevada y con la estructura de las cosas que duran. Sudadera y pantalón en el mismo crema, forro de felpa que entra en frío sin hinchar los hombros y costuras góticas que solo se ven si te paras a mirarlas.\n\nCada color es su propia referencia: no lo montamos en pack para que elijas solo el tono que quieras.",
+      "details": "80% algodón, 20% poliéster\nForro interior en felpa\nDetalles góticos en cinturilla y puño\nConjunto de dos piezas\nLavado a máquina a 30 °C, secado en plano",
+      "priceCents": 7500,
+      "compareAtCents": null,
+      "category": "chandales",
+      "categoryName": "Chandales",
+      "image": "https://i.postimg.cc/X7qGNCKv/Chandal-crema-con-detalles-goticos.png",
+      "hoverImage": "https://i.postimg.cc/FHcK1gY4/chandal-invierno-a-1.jpg",
+      "images": [
+        "https://i.postimg.cc/X7qGNCKv/Chandal-crema-con-detalles-goticos.png",
+        "https://i.postimg.cc/bwbvdHZP/chandal-invierno-a-4.jpg",
+        "https://i.postimg.cc/FHcK1gY4/chandal-invierno-a-1.jpg"
+      ],
+      "colors": [
+        {
+          "name": "Crema",
+          "hex": "#EFE7D8"
+        }
+      ],
+      "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL"
+      ],
+      "soldOutSizes": []
+    }
+  ]
+};
+/* FIN DATOS GENERADOS */
+</script>
+
+<!-- ══ 10 · Comportamiento ══════════════════════════════════════════════════
+     Vistas, filtros, carrito, buscador y arranque. Script clásico a propósito:
+     los módulos ES no cargan con `file://`.
+     ═══════════════════════════════════════════════════════════════════════ -->
+<script id="app-rebelyn">
+/* ==========================================================================
+   REBELYN · Prototipo de diseño · COMPORTAMIENTO
+   --------------------------------------------------------------------------
+   Vistas y comportamiento de la maqueta. Sin servidor: aquí los precios y el
+   carrito viven en el navegador, cosa que en la tienda real no pasa.
+
+   La estructura y las medidas salen de https://mktub.store/; los textos, la
+   marca y los productos son de REBELYN.
+
+   Orden de este bloque:
+     1. Constantes      → envío, límites y cinta
+     2. Utilidades      → money, esc, slugColor
+     3. Carrito         → estado en localStorage, add/setQty, totales
+     4. Piezas          → productCard, grid, sectionHeader
+     5. Vistas          → portada, catálogo, ficha, carrito, pago, cuenta
+     6. Pintado         → paintCart y afterCartChange
+     7. Enrutado        → route y render
+     8. Paneles         → openDrawer y closeDrawers
+     9. Buscador        → setupSearch con sugerencias
+    10. Ficha           → tallas, cantidad y nota
+    11. Clics           → añadir, filtros, cantidad, eliminar
+    12. Arranque        → cinta, iconos de pago, init
+
+   Script clásico a propósito: los módulos ES no cargan con `file://`.
+   ========================================================================== */
+(function () {
+  "use strict";
+
+  const DATA = window.REBELYN;
+
+  /* ── 1 · Constantes ───────────────────────────────────────────────────────
+     En producción los portes salen de `shippingMethod` y el umbral de envío
+     gratis de `settings`. Aquí se fijan para poder ver el texto. */
+  const ENVIO = { nombre: "Estándar", precioCents: 490, gratisDesdeCents: 7500 };
+  const MAX_POR_LINEA = 10;
+  const MAX_BUSQUEDAS = 6;
+
+  /* Contacto: viene de los ajustes de la base de datos, así que las páginas de
+     ayuda no llevan datos escritos a mano. Lo que sigue a `[` está pendiente de
+     confirmar y se muestra como está, para no inventar datos legales. */
+  const CONTACTO = DATA.store.contact ?? {};
+  const REDES = CONTACTO.social ?? {};
+  const PENDIENTE = (valor) => typeof valor === "string" && valor.startsWith("[");
+
+/* La cinta sale del ajuste `announcement` de la base de datos, que es el mismo
+   texto que aparece en la cabecera de la tienda real. */
+  const CINTA = DATA.store.announcement || "REBELYN";
+
+  /* Medidas reales de las fotos, para ponerlas en el `width`/`height` del `<img>`.
+     Si el CSS cambia el ancho y no el alto, el navegador usa el alto del atributo
+     como valor definitivo y la foto sale estirada: por eso van junto. */
+  const MEDIDA = { portada: [667, 800], foto: [811, 1440] };
+
+  /* ── 2 · Utilidades ─────────────────────────────────────────────────────── */
+
+  /** Igual que `formatMoney` de `packages/core`. */
+  const money = (cents) =>
+    new Intl.NumberFormat(DATA.store.locale, { style: "currency", currency: DATA.store.currency }).format(cents / 100);
+
+  function esc(value) {
+    return String(value).replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
+  }
+
+  const bySlug = (slug) => DATA.products.find((product) => product.slug === slug);
+
+  function conDescuento(product) {
+    return product.compareAtCents != null && product.compareAtCents > product.priceCents;
+  }
+
+  /** Envío gratis a partir del umbral; si no, portes. */
+  function envioCents(subtotal) {
+    if (subtotal === 0) return 0;
+    return subtotal >= ENVIO.gratisDesdeCents ? 0 : ENVIO.precioCents;
+  }
+
+  const unique = (values) => [...new Set(values)];
+
+  /**
+   * Búsqueda por texto libre: mira el nombre, la categoría y el resumen, sin
+   * distinguir mayúsculas. La usan el desplegable del buscador y el catálogo
+   * (`#/tienda?q=…`), así que las dos pantallas buscan exactamente lo mismo.
+   */
+  function coincide(product, texto) {
+    const needle = texto.trim().toLowerCase();
+    if (!needle) return true;
+    return (
+      product.name.toLowerCase().includes(needle) ||
+      (product.categoryName ?? "").toLowerCase().includes(needle) ||
+      (product.summary ?? "").toLowerCase().includes(needle)
+    );
+  }
+
+  /**
+   * El color se filtra por slug, como en la tienda real: "Crema" y "crema" son el
+   * mismo filtro y un enlace copiado a mano funciona igual.
+   */
+  function slugColor(value) {
+    return String(value)
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+  }
+
+  /* ── 3 · Carrito ──────────────────────────────────────────────────────────
+     El estado vive en `localStorage` con la clave de abajo. Cada línea es
+     `{ slug, size, qty }` y el precio se lee siempre del catálogo, así que
+     cambiar `window.REBELYN` no deja precios viejos guardados.
+     ──────────────────────────────────────────────────────────────────────── */
+
+  const CART_KEY = "rebelyn-maqueta-carrito";
+  let cart = loadCart();
+
+  function loadCart() {
+    try {
+      const raw = window.localStorage.getItem(CART_KEY);
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed.filter((line) => line && bySlug(line.slug)) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function saveCart() {
+    try {
+      window.localStorage.setItem(CART_KEY, JSON.stringify(cart));
+    } catch {
+      /* Sin almacenamiento el carrito dura lo que la sesión. */
+    }
+  }
+
+  const cartCount = () => cart.reduce((total, line) => total + line.qty, 0);
+  const cartSubtotal = () => cart.reduce((total, line) => total + bySlug(line.slug).priceCents * line.qty, 0);
+
+  function cartDetailed() {
+    return cart
+      .map((line) => {
+        const product = bySlug(line.slug);
+        return { ...line, product, color: product.colors[0], total: product.priceCents * line.qty };
+      })
+      .filter((line) => line.product);
+  }
+
+  function addToCart(slug, size, qty = 1) {
+    const product = bySlug(slug);
+    if (!product) return { ok: false, message: "Producto no encontrado." };
+    if (product.soldOutSizes.includes(size)) return { ok: false, message: `${size} agotada` };
+
+    const existing = cart.find((line) => line.slug === slug && line.size === size);
+    if (existing) {
+      if (existing.qty >= MAX_POR_LINEA) return { ok: false, message: `Máximo ${MAX_POR_LINEA} por talla` };
+      existing.qty += qty;
+    } else {
+      cart.push({ slug, size, qty });
+    }
+
+    saveCart();
+    afterCartChange();
+    return { ok: true, message: "Añadido" };
+  }
+
+  function setQty(slug, size, qty) {
+    const index = cart.findIndex((line) => line.slug === slug && line.size === size);
+    if (index === -1) return;
+    if (qty <= 0) cart.splice(index, 1);
+    else cart[index].qty = Math.min(qty, MAX_POR_LINEA);
+    saveCart();
+    afterCartChange();
+  }
+
+  const qtyOf = (slug, size) => {
+    const line = cart.find((item) => item.slug === slug && item.size === size);
+    return line ? line.qty : 0;
+  };
+
+  /** Si no hay existencias de ninguna talla, el producto va marcado como agotado. */
+  const agotado = (product) => product.sizes.every((size) => product.soldOutSizes.includes(size));
+
+  /** Tallas con existencias. Es la lista que se puede filtrar y la que se ofrece. */
+  const disponibles = (product) => product.sizes.filter((size) => !product.soldOutSizes.includes(size));
+
+  /* ── 4 · Piezas ─────────────────────────────────────────────────────────── */
+
+  /**
+   * Tarjeta de producto. La imagen es un cuadrado de 1:1, la segunda imagen
+   * aparece al pasar el ratón, y debajo van el nombre (11 px → 15 px) y el
+   * precio (12 px → 14 px), como en la referencia.
+   */
+  function productCard(product, options = {}) {
+    const href = `#/producto/${product.slug}`;
+    const rebajas = conDescuento(product);
+    const out = agotado(product);
+
+    const badge = rebajas ? '<div class="card__badge">Oferta</div>' : "";
+
+    // Marco verde con las tallas; al pasar el ratón, el marco se pone magenta.
+    const tallas = product.sizes
+      .map((size) => {
+        const sold = product.soldOutSizes.includes(size);
+        return `<button type="button" data-add-slug="${esc(product.slug)}" data-size="${esc(size)}"
+                  ${sold ? "disabled" : ""} aria-label="${sold ? "Agotado" : "Añadir"} ${esc(size)}">${esc(size)}</button>`;
+      })
+      .join("");
+
+    const quickAdd =
+      options.quickAdd === false || out
+        ? ""
+        : `<div class="add-to-cart-container">
+             <div class="add-to-cart-sizes">${tallas}</div>
+             <p class="add-to-cart-note" data-note hidden></p>
+           </div>`;
+
+    return `
+      <div class="card-wrapper fade-in">
+        <div class="card__inner">
+          ${out ? '<div class="sold-out"><p>Sold out</p></div>' : ""}
+          ${badge}
+          <div class="card__media">
+            <a href="${href}" class="media">
+              <img src="${product.image}" alt="${esc(product.name)}" loading="eager" decoding="async">
+              <img src="${product.hoverImage}" alt="" loading="eager" decoding="async">
+            </a>
+          </div>
+          ${quickAdd}
+        </div>
+
+        <div class="card__content">
+          <h3 class="card__heading"><a href="${href}">${esc(product.name)}</a></h3>
+          <div class="card-information">
+            <span class="vendor"></span>
+            <div class="price">
+              ${
+                rebajas
+                  ? `<span class="sale">${money(product.priceCents)}</span> <s>${money(product.compareAtCents)}</s>`
+                  : money(product.priceCents)
+              }
+            </div>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  const grid = (products) => `<ul class="grid grid--2-col-tablet-down grid--4-col-desktop">${products
+    .map((product) => `<li>${productCard(product)}</li>`)
+    .join("")}</ul>`;
+
+  /** Base de los enlaces a las secciones de la cabecera y del menú. */
+  const headerLinks = () => [
+    ["tienda", "Shop"],
+    ["envios", "Envíos"],
+    ["devoluciones", "Devoluciones"],
+    ["tallas", "Tallas"],
+    ["contacto", "Contacto"],
+  ];
+
+  const sectionHeader = (title) => `
+    <div class="section-header title-wrapper page-width">
+      <h2 class="title">${esc(title)}</h2>
+    </div>`;
+
+  /* ── 5 · Vistas ───────────────────────────────────────────────────────────
+     Cada función devuelve el HTML de una página y la pinta en `render()`.
+     ──────────────────────────────────────────────────────────────────────── */
+
+  const views = {};
+
+  /**
+   * Portada: el logo con una línea de texto y dos entradas, una franja de avisos
+   * y debajo la rejilla de novedades centrada. No hay fotos en el héroe: es el
+   * PNG de PNG externo, con canal alfa, sobre el papel.
+   */
+  views.home = function () {
+    const nuevos = DATA.products.slice(0, 8);
+
+    return `
+      <section class="section-lf-hero" id="portada-hero" style="position:relative;min-height:100vh;display:flex;align-items:center;justify-content:center;background-image:url('https://i.postimg.cc/8CvYXBsx/image.png'); background-size:cover; background-position:center; background-repeat:no-repeat; background-attachment:fixed;">
+        <div style="position:absolute;inset:0;background:rgba(0,0,0,0.2);"></div>
+        <div class="lf-hero" style="background:transparent;position:relative;">
+          <img class="lf-hero__logo" src="https://i.postimg.cc/NjwK6zhC/logo-pgn.png" alt="Rebelyn" width="800" height="800" style="image-rendering:-webkit-optimize-contrast; image-rendering:crisp-edges;">
+          <p class="lf-hero__eyebrow" style="color:#ffffff; text-shadow:1px 1px 3px #000, 2px 2px 6px #000;">Rompe con lo común</p>
+          <p class="lf-hero__eyebrow" style="margin-top:0.8rem; text-transform:none; letter-spacing:0.02em; color:#ffffff; text-shadow:1px 1px 3px #000, 2px 2px 6px #000;">Combina comodidad y estilo cada día</p>
+          <div class="lf-hero__actions">
+            <a class="button" href="#/tienda" id="nuestros-productos">Ver ropa</a>
+          </div>
+        </div>
+      </section>
+
+      <div class="promise-strip">
+        <p>Envío ${money(ENVIO.precioCents)} · gratis desde ${money(ENVIO.gratisDesdeCents)}</p>
+        <p>Devolución gratuita en 30 días</p>
+        <p>Atención por WhatsApp</p>
+      </div>
+
+      <section class="collection" id="portada-novedades">
+        ${sectionHeader("New in")}
+        ${grid(nuevos)}
+      </section>`;
+  };
+
+  /**
+   * Catálogo. Admite tres filtros, todos en el query del hash:
+   *   ?q=crema   texto libre (lo que escribe el buscador)
+   *   ?color=…   por slug de color, así que `Crema` y `crema` son lo mismo
+   *   ?talla=…   una sola talla
+   *
+   * El texto se aplica primero: las facetas ofrecen solo los colores y las
+   * tallas que quedan tras la búsqueda, y solo las que hay en stock, que es lo
+   * que hace la referencia: una talla agotada nunca sale en el catálogo.
+   */
+  views.catalog = function (params) {
+    const q = (params.get("q") ?? "").trim();
+    const color = params.get("color") ?? "";
+    const talla = params.get("talla") ?? "";
+
+    const porTexto = q ? DATA.products.filter((product) => coincide(product, q)) : DATA.products.slice();
+
+    const products = porTexto
+      .filter((product) => !color || product.colors.some((c) => slugColor(c.name) === slugColor(color)))
+      .filter((product) => !talla || disponibles(product).includes(talla));
+
+    // Cada filtro activo sale como una chapa que se quita con la ✕.
+    const chips = [
+      q ? { label: `“${q}”`, key: "q" } : null,
+      color ? { label: color, key: "color" } : null,
+      talla ? { label: `Talla ${talla}`, key: "talla" } : null,
+    ].filter(Boolean);
+
+    const titulo = q ? `Resultados de “${q}”` : "Catálogo";
+    const cuenta = `${products.length} ${products.length === 1 ? "prenda" : "prendas"}`;
+
+    const vacio = q
+      ? `<div class="empty-state"><p>Ninguna prenda coincide con “${esc(q)}”.</p><a class="button" href="#/tienda">Ver todo el catálogo</a></div>`
+      : '<div class="empty-state"><p>Sin resultados con estos filtros.</p><a class="button" href="#/tienda">Quitar filtros</a></div>';
+
+    const panel = facets(params, porTexto);
+
+    return `
+      <section class="section" id="catalogo-rejilla">
+        ${sectionHeader(titulo)}
+
+        <div class="page-width">
+          ${chips.length ? `<div class="row wrap gap-3" style="padding-bottom:1.5rem">${chips.map((chip) => `<button class="chip" type="button" data-clear="${chip.key}">${esc(chip.label)} ✕</button>`).join("")}</div>` : ""}
+
+          <p class="catalog__count">${esc(cuenta)}</p>
+
+          <div class="catalog${panel ? "" : " catalog--sin-facetas"}">
+            ${panel}
+            <div>${products.length ? grid(products) : vacio}</div>
+          </div>
+        </div>
+      </section>`;
+  };
+
+  /** Facetas de color y talla, calculadas sobre los productos que quedan. */
+  function facets(params, pool) {
+    const color = params.get("color") ?? "";
+    const talla = params.get("talla") ?? "";
+
+    const colores = unique(pool.flatMap((p) => p.colors.map((c) => c.name)));
+    const tallas = unique(pool.flatMap(disponibles));
+
+    // Una faceta sin opciones no se pinta: una búsqueda sin resultados deja la
+    // columna de filtros en blanco.
+    const bloqueColor = colores.length
+      ? `
+        <div class="facet">
+          <h2 class="facet__title">Color</h2>
+          <div class="facet__content">
+            <ul>
+              ${colores
+                .map((name) => {
+                  const hex = pool.flatMap((p) => p.colors).find((c) => c.name === name)?.hex ?? "#000";
+                  return `<li><button type="button" data-filter="color" data-value="${esc(name)}" aria-pressed="${slugColor(color) === slugColor(name)}">
+                            <span class="row gap-3"><span class="swatch" style="background:${esc(hex)}"></span>${esc(name)}</span></button></li>`;
+                })
+                .join("")}
+            </ul>
+          </div>
+        </div>`
+      : "";
+
+    const bloqueTalla = tallas.length
+      ? `
+        <div class="facet">
+          <h2 class="facet__title">Talla</h2>
+          <div class="facet__content">
+            <ul>
+              ${tallas
+                .map((name) => `<li><button type="button" data-filter="talla" data-value="${esc(name)}" aria-pressed="${talla === name}"><span>${esc(name)}</span></button></li>`)
+                .join("")}
+            </ul>
+          </div>
+        </div>`
+      : "";
+
+    if (!bloqueColor && !bloqueTalla) return "";
+
+    return `
+      <aside class="facets__display">
+        ${bloqueColor}
+        ${bloqueTalla}
+      </aside>`;
+  }
+
+  /** Ficha de producto: galería, tallas, cantidad y acordeón. */
+  views.product = function (params, slug) {
+    const product = bySlug(slug);
+    if (!product) return notFound();
+
+    const rebajas = conDescuento(product);
+    const descuento = rebajas ? Math.round((1 - product.priceCents / product.compareAtCents) * 100) : 0;
+
+    // Como en la referencia, viene marcada la primera talla con stock y las
+    // agotadas salen tachadas y sin poder pulsarse.
+    const primeraLibre = product.sizes.find((size) => !product.soldOutSizes.includes(size));
+    const tallas = product.sizes
+      .map((size) => {
+        const sold = product.soldOutSizes.includes(size);
+        const id = `talla-${product.slug}-${size}`;
+        return `<span class="variant-pill">
+            <input type="radio" id="${id}" name="talla-${esc(product.slug)}" value="${esc(size)}"
+                   data-pdp-size="${esc(size)}"${size === primeraLibre ? " checked" : ""}${sold ? " disabled" : ""}>
+            <label for="${id}">${esc(size)}${sold ? '<span class="visually-hidden"> — agotada</span>' : ""}</label>
+          </span>`;
+      })
+      .join("");
+
+    // Galería al estilo de la referencia: una imagen grande y, debajo, la lista
+    // de miniaturas. La primera es la portada y sale marcada con `aria-current`.
+    const galeria = `
+      <div class="product__media">
+        <div class="product__media-main" id="GaleriaProducto" data-gallery-main>
+          <img src="${product.images[0]}" alt="${esc(product.name)}"
+               width="${MEDIDA.portada[0]}" height="${MEDIDA.portada[1]}" data-gallery-image>
+        </div>
+
+        <ul class="thumbnail-list list-unstyled slider slider--mobile slider--tablet-up" data-gallery-thumbs>
+          ${product.images
+            .map(
+              (src, i) => `
+            <li id="Slide-Thumbnails-main-${i + 1}" class="thumbnail-list__item slider__slide" data-media-position="${i + 1}">
+              <button class="thumbnail global-media-settings global-media-settings--no-shadow" type="button"
+                      data-gallery-thumb="${i}" aria-controls="GaleriaProducto"
+                      aria-label="Ver la imagen ${i + 1} de ${product.images.length}"
+                      ${i === 0 ? 'aria-current="true"' : ""}>
+                <img src="${src}" alt="" width="104" height="125" loading="eager" decoding="async">
+              </button>
+            </li>`,
+            )
+            .join("")}
+        </ul>
+      </div>`;
+
+    return `
+      <section class="product page-width">
+        <div class="product__grid">
+          ${galeria}
+
+          <div class="product__info">
+            <h1 class="product__title">${esc(product.name)}</h1>
+
+            <div class="product__price">
+              <span class="now">${money(product.priceCents)}</span>
+              ${rebajas ? `<s>${money(product.compareAtCents)}</s><span class="badge-sale">-${descuento}%</span>` : ""}
+            </div>
+
+            <p class="product__ship">Envío ${money(ENVIO.precioCents)}, gratis a partir de ${money(ENVIO.gratisDesdeCents)}.</p>
+
+            <p class="product__summary">${esc(product.summary)}</p>
+
+            <div class="product-form__input">
+              <p class="product-form__label"><span>Color</span></p>
+              <div class="row wrap gap-3">
+                ${product.colors
+                  .map((c) => `<span class="row gap-3"><span class="swatch" style="background:${esc(c.hex)}"></span>${esc(c.name)}</span>`)
+                  .join("")}
+              </div>
+            </div>
+
+            <fieldset class="variant-pills" data-pdp-sizes>
+              <legend class="product-form__label">Talla</legend>
+              <div class="variant-pills__options">${tallas}</div>
+            </fieldset>
+
+            <div class="product-form__input">
+              <p class="product-form__label"><span>Cantidad</span></p>
+              <div class="quantity">
+                <button class="quantity__button" type="button" data-pdp-step="-1" aria-label="Restar">−</button>
+                <input class="quantity__input" data-pdp-qty value="1" inputmode="numeric" aria-label="Cantidad">
+                <button class="quantity__button" type="button" data-pdp-step="1" aria-label="Sumar">+</button>
+              </div>
+            </div>
+
+            <div class="product-form__input">
+              <button class="button product-form__submit" type="button" data-pdp-add><span>Añadir al carrito</span></button>
+              <p class="product__note" data-pdp-note role="status"></p>
+
+              <div class="wallet-button-fade-in wallet-button-wrapper">
+                <slot name="button"></slot>
+                <slot name="promise"></slot>
+                <slot name="more-options"></slot>
+              </div>
+            </div>
+
+            <div class="accordion">
+              <details open>
+                <summary>Descripción</summary>
+                <div class="accordion__content">${esc(product.description)}</div>
+              </details>
+              <details>
+                <summary>Detalles y cuidados</summary>
+                <div class="accordion__content">${esc(product.details)}</div>
+              </details>
+              <details>
+                <summary>Envíos y devoluciones</summary>
+                <div class="accordion__content">Envío estándar ${money(ENVIO.precioCents)}, gratis a partir de ${money(ENVIO.gratisDesdeCents)}.
+Devolución gratuita dentro de los 30 días siguientes a la entrega.</div>
+              </details>
+            </div>
+          </div>
+        </div>
+      </section>`;
+  };
+
+  /** Página de carrito. */
+  views.cart = function () {
+    const lines = cartDetailed();
+    const subtotal = cartSubtotal();
+    const envio = envioCents(subtotal);
+
+    if (!lines.length) {
+      return `<section class="section page-width">
+        <div class="empty-state">
+          <h2 class="title">Tu carrito está vacío</h2>
+          <p>Visita nuestra tienda para ver lo que está disponible.</p>
+          <a class="button" href="#/tienda">Ver catálogo</a>
+        </div>
+      </section>`;
+    }
+
+    return `
+      <section class="page-width">
+        ${sectionHeader("Tu carrito")}
+        <div class="cart__layout">
+          <div>${lines.map(lineaCarrito).join("")}</div>
+
+          <aside class="cart__totals">
+            <dl>
+              <div><dt class="upper">Subtotal</dt><dd>${money(subtotal)}</dd></div>
+              <div><dt class="upper">Envío</dt><dd>${envio === 0 ? "Gratis" : money(envio)}</dd></div>
+            </dl>
+            <div class="grand"><span class="upper">Total</span><span class="amount">${money(subtotal + envio)}</span></div>
+            <a class="button" style="width:100%; margin-top:1.5rem" href="#/checkout">Finalizar compra</a>
+            ${
+              envio > 0
+                ? `<p class="product__note" style="text-align:center">Te faltan ${money(ENVIO.gratisDesdeCents - subtotal)} para el envío gratis.</p>`
+                : '<p class="product__note" style="text-align:center">Envío gratis aplicado.</p>'
+            }
+          </aside>
+        </div>
+      </section>`;
+  };
+
+  /** Línea de carrito, compartida entre la página y el panel lateral. */
+  function lineaCarrito(line) {
+    return `
+      <article class="cart__line">
+        <a href="#/producto/${line.product.slug}"><img src="${line.product.image}" alt="${esc(line.product.name)}" width="${MEDIDA.portada[0]}" height="${MEDIDA.portada[1]}"></a>
+        <div class="cart__line-body">
+          <div class="cart__line-top">
+            <h3 class="cart__line-title"><a href="#/producto/${line.product.slug}">${esc(line.product.name)}</a></h3>
+            <span class="cart__line-price">${money(line.total)}</span>
+          </div>
+          <p class="cart__line-variant">
+            <span class="swatch" style="background:${esc(line.color.hex)}"></span>
+            ${esc(line.color.name)} · Talla ${esc(line.size)}
+          </p>
+          <div class="cart__line-actions">
+            <div class="quantity">
+              <button class="quantity__button" type="button" data-cart-step="-1" data-slug="${esc(line.product.slug)}" data-size="${esc(line.size)}" aria-label="Restar">−</button>
+              <span class="quantity__input">${line.qty}</span>
+              <button class="quantity__button" type="button" data-cart-step="1" data-slug="${esc(line.product.slug)}" data-size="${esc(line.size)}" aria-label="Sumar" ${line.qty >= MAX_POR_LINEA ? "disabled" : ""}>+</button>
+            </div>
+            <button class="cart-remove-button" type="button" data-cart-remove data-slug="${esc(line.product.slug)}" data-size="${esc(line.size)}">Eliminar</button>
+          </div>
+        </div>
+      </article>`;
+  }
+
+  /** Finalizar compra: el cliente rellena sus datos y envía el pedido por WhatsApp o email. */
+  views.checkout = function () {
+    if (!cart.length) {
+      window.location.hash = "#/carrito";
+      return "";
+    }
+
+    const subtotal = cartSubtotal();
+    const envio = envioCents(subtotal);
+    const campo = (id, etiqueta, extra = "") => `
+      <label class="product-form__label" for="${id}" style="display:block; margin-top:1.4rem"><span>${etiqueta}</span></label>
+      <input class="field__input" style="padding:0.8rem 1rem" id="${id}" name="${id}" ${extra}>`;
+
+    return `
+      <section class="section page-width">
+        ${sectionHeader("Finalizar compra")}
+        <div class="cart__layout">
+          <div class="cart__totals">
+            <p class="product-form__label"><span>Contacto y envío</span></p>
+            <form id="formPedido" novalidate>
+              ${campo("pNombre", "Nombre y apellidos", 'type="text" autocomplete="name" required')}
+              ${campo("pEmail", "Email", 'type="email" autocomplete="email" required')}
+              ${campo("pTelefono", "Teléfono", 'type="tel" autocomplete="tel" required')}
+              ${campo("pDireccion", "Dirección", 'type="text" autocomplete="street-address" required')}
+              ${campo("pCp", "Código postal", 'type="text" inputmode="numeric" autocomplete="postal-code" required')}
+              ${campo("pCiudad", "Ciudad y provincia", 'type="text" autocomplete="address-level2" required')}
+              ${campo("pNota", "Notas del pedido (opcional)", 'type="text"')}
+            </form>
+            <p class="product__summary" style="margin-top:1.6rem">Envíanos tu pedido y te confirmamos disponibilidad y forma de pago por el mismo canal.</p>
+            <button class="button product-form__submit" style="width:100%; margin-top:1.2rem" type="button" data-pedido="whatsapp">
+              <span>Enviar pedido por WhatsApp · ${money(subtotal + envio)}</span>
+            </button>
+            <button class="button button--secondary" style="width:100%; margin-top:1rem" type="button" data-pedido="email">
+              <span>Enviar pedido por email</span>
+            </button>
+            <p class="product__note" id="pedidoAviso" role="status" style="margin-top:1.2rem"></p>
+          </div>
+
+          <aside class="cart__totals">
+            <p class="product-form__label"><span>Tu pedido</span></p>
+            ${cartDetailed()
+              .map(
+                (line) => `<div class="row between" style="padding-block:0.5rem; font-size:1.3rem">
+                  <span>${line.qty} × ${esc(line.product.name)} <span class="vendor">(${esc(line.size)})</span></span>
+                  <span>${money(line.total)}</span>
+                </div>`,
+              )
+              .join("")}
+            <div class="row between" style="padding-block:0.5rem; font-size:1.3rem"><span>Envío</span><span>${envio ? money(envio) : "Gratis"}</span></div>
+            <div class="grand"><span class="upper">Total</span><span class="amount">${money(subtotal + envio)}</span></div>
+          </aside>
+        </div>
+      </section>`;
+  };
+
+  /** Texto del pedido, con los datos del cliente, listo para WhatsApp o email. */
+  function textoPedido(datos) {
+    const subtotal = cartSubtotal();
+    const envio = envioCents(subtotal);
+    const lineas = cartDetailed().map(
+      (line) => `- ${line.qty} × ${line.product.name} (talla ${line.size}): ${money(line.total)}`,
+    );
+    return [
+      "Hola, quiero hacer este pedido en REBELYN:",
+      "",
+      ...lineas,
+      "",
+      `Subtotal: ${money(subtotal)}`,
+      `Envío: ${envio ? money(envio) : "Gratis"}`,
+      `Total: ${money(subtotal + envio)}`,
+      "",
+      "Mis datos:",
+      `Nombre: ${datos.pNombre}`,
+      `Email: ${datos.pEmail}`,
+      `Teléfono: ${datos.pTelefono}`,
+      `Dirección: ${datos.pDireccion}, ${datos.pCp}, ${datos.pCiudad}`,
+      datos.pNota ? `Notas: ${datos.pNota}` : "",
+    ]
+      .filter((linea, i, todas) => linea !== "" || todas[i - 1] !== "")
+      .join("\n");
+  }
+
+  document.addEventListener("click", (event) => {
+    const boton = event.target.closest("[data-pedido]");
+    if (!boton) return;
+
+    const form = document.getElementById("formPedido");
+    const aviso = document.getElementById("pedidoAviso");
+    if (!form || !cart.length) return;
+    if (!form.reportValidity()) return;
+
+    const datos = Object.fromEntries(new FormData(form).entries());
+    const texto = textoPedido(datos);
+
+    if (boton.dataset.pedido === "whatsapp") {
+      const enlace = enlaceWhatsApp(texto);
+      if (!enlace) return;
+      window.open(enlace, "_blank", "noopener");
+    } else {
+      const correo = CONTACTO.email;
+      window.location.href = `mailto:${correo}?subject=${encodeURIComponent("Pedido REBELYN")}&body=${encodeURIComponent(texto)}`;
+    }
+    aviso.textContent = "Hemos preparado tu pedido. Pulsa enviar en WhatsApp o en tu correo y te respondemos para confirmarlo.";
+  });
+
+  views.account = function () {
+    return `<section class="section page-width">
+      ${sectionHeader("Cuenta")}
+      <div class="empty-state">
+        <p>Por ahora no hace falta cuenta para comprar. Si quieres consultar un pedido, escríbenos.</p>
+        <a class="button" href="#/contacto">Contacto</a>
+      </div>
+    </section>`;
+  };
+
+  /* ── Ayuda ────────────────────────────────────────────────────────────────
+     Las cuatro páginas del pie y del menú lateral. El texto sale de `ENVIO` y
+     de los ajustes, no de aquí escrito, para que no se desmilden.
+     ──────────────────────────────────────────────────────────────────────── */
+
+  /** Enlace de WhatsApp con el mensaje ya escrito, como el de la web antigua. */
+  function enlaceWhatsApp(texto) {
+    if (!CONTACTO.whatsapp) return null;
+    return `https://wa.me/${esc(CONTACTO.whatsapp)}?text=${encodeURIComponent(texto)}`;
+  }
+
+  views.envios = function () {
+    return `<section class="section page-width">
+      ${sectionHeader("Envíos")}
+      <div class="accordion">
+        <details open>
+          <summary>Coste y plazo</summary>
+          <div class="accordion__content">Envío estándar ${money(ENVIO.precioCents)}, gratis a partir de ${money(ENVIO.gratisDesdeCents)}.
+Se prepara en 1 o 2 días laborables y llega en 2 o 4 días laborables a península y Baleares. Canarias, Ceuta y Melilla se calculan aparte.</div>
+        </details>
+        <details>
+          <summary>Seguimiento</summary>
+          <div class="accordion__content">En cuanto salga el paquete te llega un email con el enlace de seguimiento. Si no aparece, escríbenos y lo buscamos a mano.</div>
+        </details>
+        <details>
+          <summary>Si algo llega mal</summary>
+          <div class="accordion__content">Dínoslo el mismo día y te enviamos uno nuevo sin coste. Por eso conviene guardar el justificante hasta que lo pruebes.</div>
+        </details>
+      </div>
+      <p class="product__note"><a href="#/contacto">¿Dudas con el envío? Escríbenos</a></p>
+    </section>`;
+  };
+
+  views.devoluciones = function () {
+    return `<section class="section page-width">
+      ${sectionHeader("Devoluciones")}
+      <div class="accordion">
+        <details open>
+          <summary>Cómo devolver</summary>
+          <div class="accordion__content">Tienes 30 días desde la entrega para devolver la prenda, sin coste, siempre que conserve su etiqueta. Escríbenos por WhatsApp o Instagram con tu número de pedido y te enviamos la etiqueta.</div>
+        </details>
+        <details>
+          <summary>Condiciones</summary>
+          <div class="accordion__content">La prenda tiene que volver sin usar, con su etiqueta y en su envoltorio original. Los conjuntos devueltos parcialmente por una talla concreta se aceptan igual que el conjunto entero.</div>
+        </details>
+        <details>
+          <summary>Reembolso</summary>
+          <div class="accordion__content">Recibimos la prenda y devolvemos el importe en 5 o 7 días, por el mismo medio con el que pagaste.</div>
+        </details>
+      </div>
+      <p class="product__note"><a href="#/contacto">¿Quieres abrir una devolución? Escríbenos</a></p>
+    </section>`;
+  };
+
+  views.tallas = function () {
+    const tallas = [...new Set(DATA.products.flatMap((producto) => producto.sizes))];
+
+    return `<section class="section page-width">
+      ${sectionHeader("Tallas")}
+      <div class="accordion">
+        <details open>
+          <summary>Tallas disponibles</summary>
+          <div class="accordion__content">${tallas.length ? esc(tallas.join(" · ")) : "Sin tallas"}
+Cada prenda indica las suyas en su ficha: lo que no aparece marcado como agotado está fuera de stock.</div>
+        </details>
+        <details>
+          <summary>Cómo elegir</summary>
+          <div class="accordion__content">La marca es la de los conjuntos de dos piezas, así que la talla es la misma en camiseta y pantalón.
+Si te quedas entre dos, elige la menor: los conjuntos quedan algo holgados de por sí.</div>
+        </details>
+        <details>
+          <summary>Medidas</summary>
+          <div class="accordion__content">La forma más fiable es medir una prenda tuya que te quede bien y compararla.
+Si dudas con tu talla, escríbenos por WhatsApp y te ayudamos a elegir.</div>
+        </details>
+      </div>
+    </section>`;
+  };
+
+  views.contacto = function () {
+    const wa = enlaceWhatsApp("Hola, tengo una duda sobre un pedido de Rebelyn");
+
+    return `<section class="section page-width">
+      ${sectionHeader("Contacto")}
+      <div class="accordion">
+        <details open>
+          <summary>WhatsApp</summary>
+          <div class="accordion__content">${PENDIENTE(CONTACTO.phone) ? "Teléfono pendiente de confirmar" : esc(CONTACTO.phone)}
+${wa ? `<a href="${wa}" rel="noopener">Escríbenos por WhatsApp</a>` : "WhatsApp pendiente de confirmar"}
+Es el canal más rápido: contestamos en horario de tienda.</div>
+        </details>
+        <details>
+          <summary>Redes</summary>
+          <div class="accordion__content">${REDES.instagram ? `<a href="${esc(REDES.instagram)}" rel="noopener">Instagram</a>` : "Instagram pendiente"}
+${REDES.tiktok ? `<a href="${esc(REDES.tiktok)}" rel="noopener">TikTok</a>` : "TikTok pendiente"}</div>
+        </details>
+        <details>
+          <summary>Correo electrónico</summary>
+          <div class="accordion__content">${PENDIENTE(CONTACTO.email) ? "" : `<a href="mailto:${esc(CONTACTO.email)}">${esc(CONTACTO.email)}</a>`}</div>
+        </details>
+      </div>
+    </section>`;
+  };
+
+  function notFound() {
+    return `<section class="section page-width">
+      <div class="empty-state"><h2 class="title">No encontrado</h2><a class="button" href="#/tienda">Ver catálogo</a></div>
+    </section>`;
+  }
+
+  /* ── 6 · Carrito pintado ─────────────────────────────────────────────────── */
+
+  function paintCart() {
+    const count = cartCount();
+
+    document.querySelectorAll("[data-cart-count]").forEach((node) => {
+      node.dataset.empty = count === 0 ? "true" : "false";
+      const span = node.querySelector("span") ?? node;
+      span.textContent = String(count);
+    });
+
+    const body = document.querySelector("[data-cart-lines]");
+    const foot = document.querySelector("[data-cart-foot]");
+    if (body) body.innerHTML = cart.length ? cartDetailed().map(lineaCarrito).join("") : '<div class="empty-state"><p>Tu carrito está vacío.</p></div>';
+    if (foot) foot.hidden = count === 0;
+
+    const subtotalNode = document.querySelector("[data-cart-subtotal]");
+    if (subtotalNode) subtotalNode.textContent = money(cartSubtotal());
+  }
+
+  /**
+   * Punto único tras tocar el carrito: burbuja y panel lateral siempre, y la
+   * página de carrito solo si está abierta. `paintCart` no llama a `render`
+   * para evitar que ambas se llamen la una a la otra.
+   */
+  function afterCartChange() {
+    paintCart();
+    if (route().name === "carrito") render();
+  }
+
+  /* ── 7 · Enrutado por hash ─────────────────────────────────────────────────
+     `#/tienda`, `#/producto/chandal-invierno-crema`, `#/carrito`, `#/checkout`
+     y `#/cuenta`. Los filtros van en el query: `#/tienda?color=Crema`.
+     ──────────────────────────────────────────────────────────────────────── */
+
+  function route() {
+    const raw = window.location.hash.replace(/^#/, "") || "/";
+    const [path, query = ""] = raw.split("?");
+    const parts = path.split("/").filter(Boolean);
+    return { name: parts[0] || "home", slug: parts[1] ?? null, params: new URLSearchParams(query) };
+  }
+
+  /** Elige la vista según la ruta: home, tienda, producto, carrito, pago, cuenta o ayuda. */
+  function vistaDe(current) {
+    switch (current.name) {
+      case "home":
+        return views.home();
+      case "tienda":
+        return views.catalog(current.params);
+      case "producto":
+        return views.product(current.params, current.slug);
+      case "carrito":
+        return views.cart();
+      case "checkout":
+        return views.checkout();
+      case "cuenta":
+        return views.account();
+      case "envios":
+        return views.envios();
+      case "devoluciones":
+        return views.devoluciones();
+      case "tallas":
+        return views.tallas();
+      case "contacto":
+        return views.contacto();
+      default:
+        return notFound();
+    }
+  }
+
+  function render() {
+    const current = route();
+    const app = document.getElementById("app");
+
+    app.innerHTML = vistaDe(current);
+
+    // El enlace de la barra que coincide con la ruta actual se marca.
+    document.querySelectorAll("[data-view-link]").forEach((link) => {
+      const target = link.getAttribute("href").split("?")[0];
+      if (target === `#/${current.name === "home" ? "" : current.name}`) link.setAttribute("aria-current", "page");
+      else link.removeAttribute("aria-current");
+    });
+
+    window.scrollTo(0, 0);
+    paintCart();
+    setupProductPage();
+  }
+
+  /* ── 8 · Paneles ─────────────────────────────────────────────────────────── */
+
+  function openDrawer(id) {
+    const drawer = document.getElementById(id);
+    if (!drawer) return;
+    closeDrawers();
+    drawer.showModal();
+    document.body.style.overflow = "";
+  }
+
+  function closeDrawers() {
+    document.querySelectorAll("dialog.drawer[open]").forEach((drawer) => drawer.close());
+    document.body.style.overflow = "";
+  }
+
+  /* ── 9 · Buscador ──────────────────────────────────────────────────────────
+     Sugerencias mientras se escribe: 180 ms de espera, flechas para moverse y
+     Enter para abrir el producto seleccionado.
+     ──────────────────────────────────────────────────────────────────────── */
+
+  function setupSearch() {
+    const form = document.querySelector("[data-search]");
+    const panel = document.querySelector("[data-search-panel]");
+    if (!form || !panel) return;
+
+    const input = form.querySelector("input");
+    const list = panel.querySelector(".predictive-search");
+
+    let timer;
+    let results = [];
+    let cursor = -1;
+
+    function close() {
+      // Se cancela la espera pendiente: si se escribe y se envía en el mismo
+      // instante, el texto que llega después no debe volver a abrir el panel.
+      window.clearTimeout(timer);
+      list.hidden = true;
+      panel.hidden = true;
+      input.setAttribute("aria-expanded", "false");
+      cursor = -1;
+    }
+
+    function open() {
+      panel.hidden = false;
+    }
+
+    /** Resalta lo que coincide, como el buscador de la referencia. */
+    function mark(text, query) {
+      const at = text.toLowerCase().indexOf(query.toLowerCase());
+      if (at === -1) return esc(text);
+      return `${esc(text.slice(0, at))}<strong>${esc(text.slice(at, at + query.length))}</strong>${esc(text.slice(at + query.length))}`;
+    }
+
+    /** Sugerencias: a partir de dos letras y como mucho `MAX_BUSQUEDAS`. */
+    function search(query) {
+      if (query.trim().length < 2) return [];
+      return DATA.products.filter((product) => coincide(product, query)).slice(0, MAX_BUSQUEDAS);
+    }
+
+    function paint(query) {
+      results = search(query);
+      open();
+
+      if (!results.length) {
+        list.hidden = false;
+        list.innerHTML = '<p class="predictive-search__empty">Sin resultados.</p>';
+        return;
+      }
+
+      list.hidden = false;
+      list.innerHTML =
+        `<ul class="predictive-search__list">${results
+          .map(
+            (product, i) => `<li><a class="predictive-search__item" role="option" id="search-opt-${i}" aria-selected="false" href="#/producto/${product.slug}">
+              <img src="${product.image}" alt="">
+              <span class="predictive-search__name">${mark(product.name, query)}</span>
+              <span class="predictive-search__price">${money(product.priceCents)}</span>
+            </a></li>`,
+          )
+          .join("")}</ul>
+        <a class="button button--tertiary" href="#/tienda?q=${encodeURIComponent(query)}" style="margin-top:1rem">Ver todos los resultados</a>`;
+      cursor = -1;
+    }
+
+    input.addEventListener("input", () => {
+      window.clearTimeout(timer);
+      if (input.value.trim().length < 2) {
+        close();
+        return;
+      }
+      const query = input.value;
+      timer = window.setTimeout(() => paint(query), 180);
+    });
+
+    input.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        close();
+        return;
+      }
+      if (list.hidden || !results.length) return;
+      const options = [...list.querySelectorAll(".predictive-search__item")];
+
+      const move = (next) => {
+        if (cursor >= 0) options[cursor].setAttribute("aria-selected", "false");
+        cursor = next;
+        if (cursor < 0) return;
+        options[cursor].setAttribute("aria-selected", "true");
+        input.setAttribute("aria-activedescendant", options[cursor].id);
+        options[cursor].scrollIntoView({ block: "nearest" });
+      };
+
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        move((cursor + 1) % results.length);
+      } else if (event.key === "ArrowUp") {
+        event.preventDefault();
+        move(cursor <= 0 ? results.length - 1 : cursor - 1);
+      } else if (event.key === "Enter" && cursor >= 0) {
+        event.preventDefault();
+        window.location.hash = `#/producto/${results[cursor].slug}`;
+        close();
+      }
+    });
+
+    document.addEventListener("click", (event) => {
+      // El clic del icono de búsqueda es el que abre el panel, así que aquí no
+      // se cierra: si no, se abriría y se cerraría en el mismo clic.
+      if (event.target instanceof Element && event.target.closest("[data-open]")) return;
+      if (!form.contains(event.target) && !panel.contains(event.target)) close();
+    });
+
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const query = input.value.trim();
+      if (query) window.location.hash = `#/tienda?q=${encodeURIComponent(query)}`;
+      close();
+    });
+
+    return { close, open };
+  }
+
+  /* ── 10 · Ficha: tallas y cantidad ────────────────────────────────────────── */
+
+  const pdp = { size: null, qty: 1 };
+
+  function setupProductPage() {
+    const app = document.getElementById("app");
+    const sizes = app.querySelector("[data-pdp-sizes]");
+    pdp.qty = 1;
+
+    setupGallery(app);
+
+    if (!sizes) {
+      pdp.size = null;
+      return;
+    }
+
+    // Las tallas son radios de verdad: el navegador ya se encarga de que solo
+    // haya una marcada y de mover el foco con las flechas.
+    const marcadas = sizes.querySelector("[data-pdp-size]:checked");
+    pdp.size = marcadas ? marcadas.value : null;
+
+    app.querySelectorAll("[data-pdp-size]").forEach((input) => {
+      input.addEventListener("change", () => {
+        if (!input.checked) return;
+        pdp.size = input.value;
+        note("");
+      });
+    });
+
+    app.querySelectorAll("[data-pdp-step]").forEach((button) => {
+      button.addEventListener("click", () => {
+        pdp.qty = Math.min(MAX_POR_LINEA, Math.max(1, pdp.qty + Number(button.dataset.pdpStep)));
+        app.querySelector("[data-pdp-qty]").value = String(pdp.qty);
+      });
+    });
+
+    app.querySelector("[data-pdp-add]").addEventListener("click", () => {
+      if (!pdp.size) {
+        note("Elige una talla.", "error");
+        return;
+      }
+      const result = addToCart(route().slug, pdp.size, pdp.qty);
+      note(result.ok ? `${result.message} · ${pdp.size}` : result.message, result.ok ? "ok" : "error");
+    });
+  }
+
+  /**
+   * Galería de la ficha: la miniatura pulsada se muestra en grande y queda
+   * marcada. Se cambia el `src` de la imagen grande en vez de apilarlas, para que
+   * solo se descargue la foto que se está viendo.
+   */
+  function setupGallery(app) {
+    const thumbs = app.querySelectorAll("[data-gallery-thumb]");
+    const main = app.querySelector("[data-gallery-image]");
+    if (!thumbs.length || !main) return;
+
+    // Zoom ligero al clicar la imagen principal
+    if (main.parentElement) {
+      main.parentElement.addEventListener("click", () => {
+        const src = main.src;
+        const overlay = document.createElement("div");
+        overlay.style.cssText = "position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.9);display:flex;align-items:center;justify-content:center;padding:2rem;cursor:zoom-out";
+        const img = document.createElement("img");
+        img.src = src;
+        img.alt = main.alt;
+        img.style.cssText = "max-width:95vw;max-height:95vh;object-fit:contain;border-radius:8px";
+        overlay.appendChild(img);
+        overlay.addEventListener("click", () => overlay.remove());
+        document.body.appendChild(overlay);
+      });
+    }
+
+    thumbs.forEach((thumb) => {
+      thumb.addEventListener("click", () => {
+        const imagen = thumb.querySelector("img");
+        if (!imagen || imagen.src === main.src) return;
+
+        main.src = imagen.src;
+        main.alt = imagen.alt || main.alt.replace(/ — vista \d+$/, "");
+        thumbs.forEach((otro) => {
+          if (otro === thumb) otro.setAttribute("aria-current", "true");
+          else otro.removeAttribute("aria-current");
+        });
+      });
+    });
+  }
+
+  function note(message, kind) {
+    const node = document.querySelector("[data-pdp-note]");
+    if (!node) return;
+    node.textContent = message;
+    if (kind) node.dataset.kind = kind;
+    else delete node.dataset.kind;
+  }
+
+  /* ── 11 · Clics generales ───────────────────────────────────────────────────
+     Un único listener en el documento, en lugar de uno por botón: las vistas
+     se repintan enteras, así que los listeners se volverían a crear.
+     ──────────────────────────────────────────────────────────────────────── */
+
+  document.addEventListener("click", (event) => {
+    const target = event.target instanceof Element ? event.target : null;
+    if (!target) return;
+
+    const opener = target.closest("[data-open]");
+    if (opener) {
+      if (opener.dataset.open === "cart") openDrawer("drawer-cart");
+      else if (opener.dataset.open === "menu") openDrawer("drawer-menu");
+      else document.querySelector("[data-search-panel]").hidden = false;
+      return;
+    }
+
+    if (target.closest("[data-close]")) {
+      closeDrawers();
+      return;
+    }
+
+    // Un enlace dentro de un panel lo cierra siempre. Si apunta a la página en
+    // la que ya estamos no hay hashchange, y el panel se quedaría abierto.
+    if (target.closest("dialog.drawer a")) {
+      closeDrawers();
+      return;
+    }
+
+    // Añadir desde la tarjeta: marco verde con las tallas.
+    const add = target.closest("[data-add-slug]");
+    if (add && !add.disabled) {
+      const { size } = add.dataset;
+      const result = addToCart(add.dataset.addSlug, size, 1);
+
+      const noteNode = add.closest(".add-to-cart-container")?.querySelector("[data-note]");
+      if (noteNode) {
+        noteNode.hidden = false;
+        noteNode.textContent = result.message;
+        noteNode.dataset.kind = result.ok ? "ok" : "error";
+        window.clearTimeout(noteNode.timer);
+        noteNode.timer = window.setTimeout(() => {
+          noteNode.hidden = true;
+        }, 2200);
+      }
+      return;
+    }
+
+    // Filtros de color y talla.
+    const filter = target.closest("[data-filter]");
+    if (filter) {
+      const params = route().params;
+      const { filter: key, value } = filter.dataset;
+      if (params.get(key) === value) params.delete(key);
+      else params.set(key, value);
+      const query = params.toString();
+      window.location.hash = `#/tienda${query ? `?${query}` : ""}`;
+      return;
+    }
+
+    const clear = target.closest("[data-clear]");
+    if (clear) {
+      const params = route().params;
+      params.delete(clear.dataset.clear);
+      const query = params.toString();
+      window.location.hash = `#/tienda${query ? `?${query}` : ""}`;
+      return;
+    }
+
+    const step = target.closest("[data-cart-step]");
+    if (step) {
+      const { slug, size } = step.dataset;
+      setQty(slug, size, qtyOf(slug, size) + Number(step.dataset.cartStep));
+      return;
+    }
+
+    const remove = target.closest("[data-cart-remove]");
+    if (remove) setQty(remove.dataset.slug, remove.dataset.size, 0);
+  });
+
+  /* ── 12 · Arranque ────────────────────────────────────────────────────────── */
+
+  /**
+   * La cinta repite el anuncio el número de veces que haga falta para cubrir el
+   * ancho de la ventana, y se mueve exactamente un grupo: el bucle salta de un
+   * grupo al siguiente, así que no se ve ni un hueco. La duración se calcula a
+   * partir del ancho medido para que el texto vaya siempre a la misma velocidad,
+   * venga la pantalla ancha o estrecha.
+   */
+  function setupMarquee() {
+    const track = document.querySelector("[data-marquee]");
+    if (!track) return;
+
+    const trozo = CINTA.split(" · ")
+      .map((texto) => `<span>${esc(texto)}</span><span class="tick"></span>`)
+      .join("");
+
+    const grupo = `<div class="running-text__content">${trozo}</div>`;
+
+    /* El grupo se pinta con innerHTML y no con append: `append` con una cadena
+       añade un nodo de texto y la cinta se vería tal cual, con las etiquetas
+       dentro, en vez de en movimiento. */
+    track.innerHTML = grupo;
+    const anchoGrupo = track.firstElementChild?.getBoundingClientRect().width ?? 0;
+
+    if (!anchoGrupo) return;
+
+    /* Dos copias más de las que caben: la primera entra por la derecha mientras
+       sale la de la izquierda y la segunda deja un grupo de margen, para que ni
+       un pixel de redondeo enseñe el final de la cinta. */
+    track.innerHTML = grupo.repeat(Math.ceil(window.innerWidth / anchoGrupo) + 2);
+
+    track.style.setProperty("--grupo", `${anchoGrupo}px`);
+    // 40 px por segundo: pausado para poder leerlo y sin saltos en móvil.
+    track.style.setProperty("--duracion", `${(anchoGrupo / 40).toFixed(2)}s`);
+  }
+
+  /**
+   * Logos de los métodos de pago, en color y con su marca.
+   *
+   * Los métodos son los del ajuste `paymentMethods`: PayPal, Google Pay y
+   * Apple Pay. Cada logo es un SVG dibujado aquí, sin peticiones de red, para
+   * que la maqueta siga siendo un archivo que funciona con `file://`.
+   */
+  function setupPaymentIcons() {
+    const list = document.querySelector("[data-payment]");
+    if (!list) return;
+
+    /* PayPal: las dos P superpuestas, azul oscuro y azul claro, más el nombre. */
+    const paypal = `<svg class="icon" viewBox="0 0 60 40" role="img" aria-label="PayPal">
+      <path fill="#003087" d="M8.2 3h13.4c6.9 0 10.9 3.4 9.9 9.4-.9 5.4-4.9 9.4-11.1 9.4h-4.3l-1.9 11.2H4.9L8.2 3Zm8.1 6.6-1.2 6.6h3.3c3 0 5-1.5 5.4-3.7.4-2.4-1.1-3.5-4-3.5h-3.5Z"/>
+      <path fill="#009cde" d="M18.4 7.6h12.6c6.9 0 10.9 3.4 9.9 9.4-.9 5.4-4.9 9.4-11.1 9.4h-4.3l-1.7 10h-9.3L18.4 7.6Zm7.7 6.4-1.2 6.6h3.3c3 0 5-1.5 5.4-3.7.4-2.4-1.1-3.5-4-3.5h-3.5Z"/>
+      <text x="52" y="37" text-anchor="end" font-size="6" fill="#003087" font-family="Helvetica, Arial, sans-serif">PayPal</text>
+    </svg>`;
+
+    /* Google Pay: la G de Google en sus cuatro colores y "Pay" en gris. */
+    const googlepay = `<svg class="icon" viewBox="0 0 60 40" role="img" aria-label="Google Pay">
+      <path fill="#4285F4" d="M17.6 20c0-1.3.1-2.2.4-3.2H10v6.1h4.3a3.7 3.7 0 0 1-1.6 2.4v2h2.6c1.5-1.4 2.3-3.4 2.3-5.8v-1.5Z"/>
+      <path fill="#34A853" d="M10 29.8c2.2 1.3 4.9 2 7.6 2 1.8 0 3.5-.3 5-1l-2.6-2c-.7.5-1.6.8-2.4.8a4 4 0 0 1-3.8-2.8H9.9v2.1A8.4 8.4 0 0 0 17.6 31.8Z"/>
+      <path fill="#FBBC05" d="M13.8 25.8a4 4 0 0 1 0-2.6v-2H9.9a8.4 8.4 0 0 0 0 7.6l3.9-3Z"/>
+      <path fill="#EA4335" d="M17.6 14.2a4.6 4.6 0 0 1 3.2 1.3l2.4-2.4A7.7 7.7 0 0 0 10 21.1l3.9-3a4 4 0 0 1 3.7-2.7Z"/>
+      <text x="52" y="26" text-anchor="end" font-size="9" fill="#5F6368" font-family="Helvetica, Arial, sans-serif">Pay</text>
+    </svg>`;
+
+    /* Apple Pay: la manzana de Apple en negro y "Pay" al lado. */
+    const applepay = `<svg class="icon" viewBox="0 0 60 40" role="img" aria-label="Apple Pay">
+      <path fill="#000000" d="M24.1 12.4c.6-.7 1-1.7.9-2.7-.9 0-2 .6-2.6 1.3-.6.6-1.1 1.6-1 2.6 1 .1 2-.5 2.7-1.2ZM27.6 20.6c0-2.4 2-3.6 2.1-3.7-1.1-1.7-2.9-1.9-3.6-1.9-1.5-.2-3 .9-3.8.9s-2-.9-3.2-.9c-1.7 0-3.2 1-4 2.5-1.7 3-.4 7.4 1.2 9.8.8 1.2 1.8 2.5 3 2.4 1.2 0 1.7-.8 3.1-.8s1.9.8 3.2.8c1.3 0 2.2-1.2 3-2.4.9-1.4 1.3-2.7 1.3-2.8-.1 0-2.3-.9-2.3-3.9Z"/>
+      <path fill="#000000" d="M22.4 9.9c.7-.9 1.2-2.1 1-3.3-1 .1-2.3.7-3 1.6-.7.8-1.2 2-1.1 3.2 1.1.1 2.4-.6 3.1-1.5Z"/>
+      <text x="52" y="26" text-anchor="end" font-size="9" fill="#000000" font-family="Helvetica, Arial, sans-serif">Pay</text>
+    </svg>`;
+
+    list.innerHTML = [paypal, googlepay, applepay].map((logo) => `<li>${logo}</li>`).join("");
+  }
+
+  /**
+   * Rellena la navegación de la cabecera y del menú lateral con las secciones
+   * reales. El HTML trae escrito el enlace a la tienda; lo demás se genera aquí
+   * para que la cabecera y el menú no puedan quedarse desincronizados.
+   */
+  function setupNavigation() {
+    const enlaces = headerLinks();
+
+    const cabecera = document.getElementById("cabecera-nav");
+    if (cabecera) {
+      cabecera.innerHTML = enlaces.map(([ruta, texto]) => `<a data-view-link href="#/${ruta}">${esc(texto)}</a>`).join("");
+    }
+
+    const menu = document.querySelector("#drawer-menu .drawer__body > ul");
+    if (menu) {
+      menu.innerHTML = enlaces.map(([ruta, texto]) => `<li><a class="menu-drawer__menu-item" data-view-link href="#/${ruta}">${esc(texto)}</a></li>`).join("");
+    }
+  }
+
+  /**
+   * Pop up de bienvenida: se muestra una sola vez por navegador. Al cerrarlo
+   * (invitado o iniciando sesión) aparece el aviso de cookies + legal.
+   */
+  function setupWelcome() {
+    const modal = document.getElementById("welcome-modal");
+    const notice = document.getElementById("legal-notice");
+    if (!modal) return;
+
+    const mostrarAviso = () => {
+      if (notice && !localStorage.getItem("rb_cookie_consent")) notice.style.display = "block";
+    };
+
+    try {
+      if (!localStorage.getItem("rb_welcome_done")) {
+        modal.style.display = "flex";
+        document.body.style.overflow = "hidden";
+      } else {
+        mostrarAviso();
+      }
+    } catch {
+      modal.style.display = "flex";
+      document.body.style.overflow = "hidden";
+    }
+
+    const cerrar = (invitado) => {
+      try {
+        localStorage.setItem("rb_welcome_done", "1");
+        if (invitado) localStorage.setItem("rb_guest", "1");
+      } catch {}
+      modal.style.display = "none";
+      document.body.style.overflow = "";
+      mostrarAviso();
+    };
+
+    modal.querySelectorAll("[data-welcome-close]").forEach((el) => {
+      el.addEventListener("click", () => cerrar(true));
+    });
+    const guestBtn = document.getElementById("welcome-guest-btn");
+    if (guestBtn) guestBtn.addEventListener("click", () => cerrar(true));
+
+    const tabLogin = document.getElementById("welcome-tab-login");
+    const tabGuest = document.getElementById("welcome-tab-guest");
+    const panelLogin = document.getElementById("welcome-panel-login");
+    const panelGuest = document.getElementById("welcome-panel-guest");
+
+    const activarTab = (login) => {
+      if (!tabLogin || !tabGuest || !panelLogin || !panelGuest) return;
+      panelLogin.style.display = login ? "block" : "none";
+      panelGuest.style.display = login ? "none" : "block";
+      tabLogin.style.borderBottom = login ? "2px solid #121212" : "none";
+      tabLogin.style.marginBottom = login ? "-1px" : "0";
+      tabLogin.style.color = login ? "#121212" : "rgb(32 32 32 / 60%)";
+      tabGuest.style.borderBottom = login ? "none" : "2px solid #121212";
+      tabGuest.style.marginBottom = login ? "0" : "-1px";
+      tabGuest.style.color = login ? "rgb(32 32 32 / 60%)" : "#121212";
+    };
+    if (tabLogin) tabLogin.addEventListener("click", () => activarTab(true));
+    if (tabGuest) tabGuest.addEventListener("click", () => activarTab(false));
+
+    const loginBtn = document.getElementById("welcome-login-btn");
+    if (loginBtn) {
+      loginBtn.addEventListener("click", () => {
+        const email = document.getElementById("welcome-email");
+        const password = document.getElementById("welcome-password");
+        const notif = document.getElementById("welcome-notifications");
+        if (!email || !email.value || !password || !password.value) {
+          email?.focus();
+          return;
+        }
+        try {
+          if (notif && notif.checked) {
+            const subs = JSON.parse(localStorage.getItem("rb_newsletter") ?? "[]");
+            if (!subs.includes(email.value)) subs.push(email.value);
+            localStorage.setItem("rb_newsletter", JSON.stringify(subs));
+          }
+        } catch {}
+        cerrar(false);
+      });
+    }
+
+    const accept = document.getElementById("legal-notice-accept");
+    if (accept) {
+      accept.addEventListener("click", () => {
+        try {
+          localStorage.setItem("rb_cookie_consent", "1");
+        } catch {}
+        if (notice) notice.style.display = "none";
+      });
+    }
+  }
+
+  document.addEventListener("error", (event) => {
+    const img = event.target;
+    if (img && img.tagName === "IMG") img.classList.add("img-roto");
+  }, true);
+
+  function init() {
+    document.querySelectorAll("dialog.drawer").forEach((drawer) => {
+      drawer.addEventListener("close", () => {
+        if (!document.querySelector("dialog.drawer[open]")) document.body.style.overflow = "";
+      });
+      // Clic en el fondo cierra; el panel es el hijo, así que no se propaga.
+      drawer.addEventListener("click", (event) => {
+        if (event.target === drawer) drawer.close();
+      });
+    });
+
+    setupNavigation();
+    setupWelcome();
+    setupMarquee();
+    // Al girar el móvil o redimensionar la ventana hay que volver a medir: el
+    // número de copias depende del ancho disponible.
+    let redimension;
+    window.addEventListener("resize", () => {
+      window.clearTimeout(redimension);
+      redimension = window.setTimeout(setupMarquee, 150);
+    });
+    const search = setupSearch();
+    window.addEventListener("hashchange", () => {
+      // Al cambiar de página se cierra lo que esté abierto: el desplegable de
+      // búsqueda y los paneles laterales (menú y carrito).
+      search.close();
+      closeDrawers();
+      render();
+    });
+    render();
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
+  else init();
+})();
+</script>
+</body>
+</html>
