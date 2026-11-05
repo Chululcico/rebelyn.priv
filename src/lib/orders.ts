@@ -5,6 +5,8 @@ import { generateOrderNumber } from "@/lib/slug";
 import { applyDiscount } from "@/lib/discounts";
 import { quoteShipping } from "@/lib/shipping";
 import { consumeStock, StockError, validateStockForItems } from "@/lib/stock";
+import { sendEmail } from "@/lib/emails";
+import { orderPaidEmail } from "@/lib/emails/templates";
 
 export type CheckoutInput = {
   email: string;
@@ -212,6 +214,23 @@ export async function createOrderFromCart(params: {
     // Vaciar el carrito solo después de crear el pedido con éxito.
     await db.cartItem.deleteMany({ where: { cartId: params.cartId } });
     await db.cart.update({ where: { id: params.cartId }, data: { discountCode: null } }).catch(() => undefined);
+
+    // Email automático de confirmación (no bloquea el checkout si falla)
+    try {
+      const fullOrder = await db.order.findUnique({
+        where: { id: order.id },
+        include: { items: true },
+      });
+      if (fullOrder) {
+        await sendEmail({
+          to: fullOrder.email,
+          subject: `Pedido confirmado ${fullOrder.orderNumber} · REBELYN`,
+          react: orderPaidEmail(fullOrder),
+        });
+      }
+    } catch (e) {
+      console.error("[orders] Error enviando email de confirmación:", e);
+    }
 
     return { orderId: order.id, orderNumber: order.orderNumber, totals };
   } catch (error) {

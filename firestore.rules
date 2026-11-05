@@ -1,20 +1,26 @@
-﻿rules_version = '"'"'2'"'"';
+﻿rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function isSignedIn() {
       return request.auth != null;
     }
+    
     function getUserData() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
+    
     function isAdmin() {
-      return isSignedIn() && getUserData().role in ["ADMIN", "SUPER_ADMIN"];
+      return isSignedIn() && getUserData().role in ['ADMIN', 'SUPER_ADMIN'];
+    }
+    
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
     }
 
     match /users/{uid} {
-      allow read: if isSignedIn() && request.auth.uid == uid;
-      allow create: if isSignedIn() && request.auth.uid == uid;
-      allow update: if isSignedIn() && request.auth.uid == uid && !("role" in request.resource.data.diff(resource.data).affectedKeys());
+      allow read: if isOwner(uid) || isAdmin();
+      allow create: if isOwner(uid);
+      allow update: if (isOwner(uid) && !('role' in request.resource.data.diff(resource.data).affectedKeys())) || isAdmin();
       allow delete: if false;
     }
 
@@ -22,10 +28,12 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isAdmin();
     }
+
     match /categories/{id} {
       allow read: if true;
       allow write: if isAdmin();
     }
+
     match /variants/{id} {
       allow read: if true;
       allow write: if isAdmin();
