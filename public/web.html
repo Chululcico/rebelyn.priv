@@ -3,38 +3,63 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>REBELYN · Ver web</title>
+  <title>REBELYN · Accesos Web</title>
   <style>
-    :root { color-scheme: light; }
-    body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background: #f6f6f6; color: #121212; }
-    .wrap { max-width: 720px; margin: 0 auto; padding: 48px 20px; }
-    .card { background: #fff; border: 1px solid #e5e5e5; border-radius: 12px; padding: 24px; }
-    h1 { margin: 0 0 8px; font-size: 28px; letter-spacing: 0.04em; }
-    p { margin: 0 0 16px; color: #555; line-height: 1.5; }
-    .actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 20px; }
-    a.btn { display: inline-block; padding: 12px 16px; border-radius: 8px; text-decoration: none; font-weight: 600; }
-    a.primary { background: #121212; color: #fff; }
-    a.secondary { background: #fff; color: #121212; border: 1px solid #121212; }
-    ul { margin: 8px 0 0 18px; color: #444; }
-    code { background: #f0f0f0; padding: 2px 6px; border-radius: 4px; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Arial, Helvetica, sans-serif; background: linear-gradient(180deg, #f7f7f7, #efefef); color: #111; }
+    .container { max-width: 860px; margin: 0 auto; padding: 32px 16px 48px; }
+    .header { background: #111; color: #fff; border-radius: 14px; padding: 22px 20px; margin-bottom: 16px; }
+    .header h1 { margin: 0; font-size: 28px; letter-spacing: 2px; }
+    .header p { margin: 6px 0 0; color: #d6d6d6; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+    .card { background: #fff; border: 1px solid #ddd; border-radius: 12px; padding: 16px; }
+    .card h2 { margin: 0 0 8px; font-size: 18px; }
+    .card p { margin: 0 0 12px; color: #555; font-size: 14px; line-height: 1.4; }
+    a.btn { display: inline-block; width: 100%; text-align: center; text-decoration: none; padding: 11px 12px; border-radius: 8px; font-weight: 700; }
+    .primary { background: #111; color: #fff; }
+    .secondary { background: #fff; color: #111; border: 1px solid #111; }
+    .note { margin-top: 14px; background: #fff; border: 1px solid #ddd; border-radius: 12px; padding: 14px 16px; }
+    .note h3 { margin: 0 0 8px; font-size: 16px; }
+    .note p { margin: 0; color: #444; line-height: 1.45; }
+    .footer-links { margin-top: 14px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .footer-links a { color: #111; }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="card">
-      <h1>REBELYN · Web</h1>
-      <p>Accesos rápidos para visualizar la tienda.</p>
-      <ul>
-        <li>Inicio: <code>/</code></li>
-        <li>Productos: <code>/products</code></li>
-        <li>Carrito: <code>/cart</code></li>
-        <li>Cuenta: <code>/account</code></li>
-      </ul>
-      <div class="actions">
+  <div class="container">
+    <div class="header">
+      <h1>REBELYN</h1>
+      <p>Página de accesos rápidos para ver la tienda</p>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h2>Inicio</h2>
+        <p>Abre la página principal de la tienda.</p>
         <a class="btn primary" href="/">Ver inicio</a>
+      </div>
+      <div class="card">
+        <h2>Productos</h2>
+        <p>Explora el catálogo de productos.</p>
         <a class="btn secondary" href="/products">Ver productos</a>
+      </div>
+      <div class="card">
+        <h2>Carrito</h2>
+        <p>Revisa los productos añadidos al carrito.</p>
         <a class="btn secondary" href="/cart">Ver carrito</a>
-        <a class="btn secondary" href="/admin.html">Ir a accesos admin</a>
+      </div>
+      <div class="card">
+        <h2>Cuenta</h2>
+        <p>Accede a la zona de cliente (si has iniciado sesión).</p>
+        <a class="btn secondary" href="/account">Ver cuenta</a>
+      </div>
+    </div>
+
+    <div class="note">
+      <h3>Consejo</h3>
+      <p>Esta página es solo un acceso rápido. La web real funciona con Next.js, base de datos, pagos y panel admin. Si algo no carga, revisa que el despliegue en Vercel esté correcto.</p>
+      <div class="footer-links">
+        <a href="/admin.html">Ir a accesos admin →</a>
       </div>
     </div>
   </div>
