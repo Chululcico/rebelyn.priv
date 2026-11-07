@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { BRAND } from "@/lib/brand";
-import { getFeaturedProducts, getNewProducts } from "@/lib/catalog";
+import { queryProducts } from "@/lib/catalog";
 import { getSettings } from "@/lib/settings";
 import { formatMoney } from "@/lib/money";
 import { ProductCard } from "@/components/store/product-card";
@@ -9,7 +9,10 @@ import { WelcomeModal } from "@/components/store/welcome-modal";
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const [nuevos, destacados, settings] = await Promise.all([getNewProducts(8), getFeaturedProducts(4), getSettings()]);
+  const [{ items: products }, settings] = await Promise.all([
+    queryProducts({ perPage: 100, sort: "newest" }),
+    getSettings(),
+  ]);
   const standard = settings.shippingMethods.find((m) => m.id === "standard");
 
   return (
@@ -32,7 +35,7 @@ export default async function HomePage() {
             {BRAND.subline}
           </p>
           <div className="mt-8">
-            <Link href="#novedades" className="button">
+            <Link href="#productos" className="button">
               Ver ropa
             </Link>
           </div>
@@ -48,41 +51,20 @@ export default async function HomePage() {
         </div>
       </div>
 
-      {/* Novedades */}
-      {nuevos.length > 0 && (
-        <section id="novedades" className="page-width py-14">
-          <div className="flex items-baseline justify-between mb-8">
-            <h2 className="title-section mb-0">New in</h2>
-            <Link href="/shop" className="text-[1.3rem] uppercase tracking-[0.14em] underline hover:text-magenta">
-              Ver todo
-            </Link>
-          </div>
+      {/* Todos los productos */}
+      <section id="productos" className="page-width py-14">
+        <div className="flex items-baseline justify-between mb-8">
+          <h2 className="title-section mb-0">Productos</h2>
+        </div>
+        {products.length > 0 ? (
           <div className="product-grid">
-            {nuevos.map((product) => (
+            {products.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>
-        </section>
-      )}
-
-      {/* Categorías */}
-      <section className="page-width pb-14">
-        <div className="grid gap-4 md:grid-cols-3">
-          {[
-            { href: "/shop?category=chandales", label: "Chandales" },
-            { href: "/shop?category=sudaderas", label: "Sudaderas" },
-            { href: "/shop?category=camisetas", label: "Camisetas" },
-          ].map((cat) => (
-            <Link
-              key={cat.href}
-              href={cat.href}
-              className="group relative flex items-end justify-between p-6 bg-ink text-paper min-h-[16rem] transition-transform hover:-translate-y-1"
-            >
-              <span className="text-[1.8rem] uppercase tracking-[0.2em]">{cat.label}</span>
-              <span className="text-[1.3rem] uppercase tracking-[0.14em] opacity-70 group-hover:opacity-100">Comprar →</span>
-            </Link>
-          ))}
-        </div>
+        ) : (
+          <p className="text-[1.5rem] text-muted">Todavía no hay productos. Añádelos desde el panel de administración.</p>
+        )}
       </section>
 
       {/* Sección de marca */}
@@ -101,17 +83,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Destacados */}
-      {destacados.length > 0 && (
-        <section className="page-width py-14">
-          <h2 className="title-section">Destacados</h2>
-          <div className="product-grid">
-            {destacados.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
-        </section>
-      )}
+
 
       {/* Llamada a la acción */}
       <section className="border-y hairline py-14 text-center">
