@@ -1,7 +1,7 @@
-﻿import { initializeApp, getApps, getApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
-import { getStorage } from "firebase/storage";
+﻿import { initializeApp, getApps, getApp, type FirebaseApp } from "firebase/app";
+import { getAuth, GoogleAuthProvider, type Auth } from "firebase/auth";
+import { getFirestore, type Firestore } from "firebase/firestore";
+import { getStorage, type FirebaseStorage } from "firebase/storage";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -13,10 +13,49 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
-const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+let _app: FirebaseApp | null = null;
+let _auth: Auth | null = null;
+let _db: Firestore | null = null;
+let _storage: FirebaseStorage | null = null;
+let _googleProvider: GoogleAuthProvider | null = null;
 
-export const auth = getAuth(app);
-export const db = getFirestore(app);
-export const storage = getStorage(app);
-export const googleProvider = new GoogleAuthProvider();
-googleProvider.setCustomParameters({ prompt: "select_account" });
+function getFirebaseApp(): FirebaseApp {
+  if (_app) return _app;
+  if (!firebaseConfig.apiKey) {
+    throw new Error("Falta NEXT_PUBLIC_FIREBASE_API_KEY");
+  }
+  _app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+  return _app;
+}
+
+export function getFirebaseAuth(): Auth {
+  if (_auth) return _auth;
+  _auth = getAuth(getFirebaseApp());
+  return _auth;
+}
+
+export function getFirebaseDb(): Firestore {
+  if (_db) return _db;
+  _db = getFirestore(getFirebaseApp());
+  return _db;
+}
+
+export function getFirebaseStorage(): FirebaseStorage {
+  if (_storage) return _storage;
+  _storage = getStorage(getFirebaseApp());
+  return _storage;
+}
+
+export function getGoogleProvider(): GoogleAuthProvider {
+  if (_googleProvider) return _googleProvider;
+  _googleProvider = new GoogleAuthProvider();
+  _googleProvider.setCustomParameters({ prompt: "select_account" });
+  return _googleProvider;
+}
+
+// Compat: exports usados en el código existente (se inicializan al acceder en runtime)
+export const auth = typeof window !== "undefined" ? getFirebaseAuth() : (null as unknown as Auth);
+export const db = typeof window !== "undefined" ? getFirebaseDb() : (null as unknown as Firestore);
+export const storage = typeof window !== "undefined" ? getFirebaseStorage() : (null as unknown as FirebaseStorage);
+export const googleProvider = typeof window !== "undefined" ? getGoogleProvider() : (null as unknown as GoogleAuthProvider);
+
