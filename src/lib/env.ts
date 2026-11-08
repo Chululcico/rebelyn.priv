@@ -1,20 +1,23 @@
-// Acceso tipado a las variables de entorno. Falla en arranque si falta una
-// obligatoria en producción, y avisa en desarrollo.
+// Acceso tipado a las variables de entorno.
+// Evitamos lanzar errores en la carga del módulo (rompe rutas/serverless con 500 HTML).
+// Si falta algo crítico, fallará cuando se use, y las rutas API pueden capturarlo.
 
-function required(name: string): string {
-  const value = process.env[name];
-  if (!value) {
-    if (process.env.NODE_ENV === "production") {
-      throw new Error(`Falta la variable de entorno obligatoria: ${name}`);
-    }
-    return "";
-  }
-  return value;
+function read(name: string): string {
+  return process.env[name] || "";
 }
 
+function warnIfMissing(name: string) {
+  if (process.env.NODE_ENV === "production" && !process.env[name]) {
+    console.error(`[env] Falta la variable de entorno: ${name}`);
+  }
+}
+
+warnIfMissing("DATABASE_URL");
+warnIfMissing("SESSION_SECRET");
+
 export const env = {
-  databaseUrl: required("DATABASE_URL"),
-  sessionSecret: required("SESSION_SECRET"),
+  databaseUrl: read("DATABASE_URL"),
+  sessionSecret: read("SESSION_SECRET"),
   storeUrl: process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_STORE_URL || "http://localhost:3000",
   storeName: process.env.NEXT_PUBLIC_STORE_NAME || "REBELYN",
   resendApiKey: process.env.RESEND_API_KEY || "",
