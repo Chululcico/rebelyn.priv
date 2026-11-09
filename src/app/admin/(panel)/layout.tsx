@@ -12,6 +12,7 @@ const NAV = [
   { href: "/admin/products", label: "Productos" },
   { href: "/admin/categories", label: "Categorías" },
   { href: "/admin/inventory", label: "Inventario" },
+  { href: "/admin/shipping", label: "Envíos (Correos)" },
   { href: "/admin/customers", label: "Clientes" },
   { href: "/admin/discounts", label: "Descuentos" },
   { href: "/admin/returns", label: "Devoluciones" },

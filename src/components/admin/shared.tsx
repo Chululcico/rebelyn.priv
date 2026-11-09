@@ -67,7 +67,18 @@ export function StatusBadge({ status }: { status: string }) {
 
 // ── Formulario de producto ────────────────────────────────────────────────────
 
-type Variant = { id?: string; size: string; colorName: string; colorHex: string; stock: number; sku?: string };
+type Variant = {
+  id?: string;
+  size: string;
+  colorName: string;
+  colorHex: string;
+  stock: number;
+  sku?: string;
+  weightGrams?: string;
+  lengthCm?: string;
+  widthCm?: string;
+  heightCm?: string;
+};
 
 export type ProductFormState = {
   name: string;
@@ -82,6 +93,10 @@ export type ProductFormState = {
   status: "DRAFT" | "ACTIVE" | "ARCHIVED";
   tags: string;
   images: string[];
+  weightGrams: string;
+  lengthCm: string;
+  widthCm: string;
+  heightCm: string;
   variants: Variant[];
 };
 
@@ -89,8 +104,16 @@ export function emptyProductForm(): ProductFormState {
   return {
     name: "", slug: "", summary: "", description: "", details: "",
     price: "", compareAt: "", categoryId: "", featured: false, status: "DRAFT",
-    tags: "", images: [], variants: [{ size: "M", colorName: "Negro", colorHex: "#141414", stock: 0 }],
+    tags: "", images: [],
+    weightGrams: "300", lengthCm: "30", widthCm: "20", heightCm: "5",
+    variants: [{ size: "M", colorName: "Negro", colorHex: "#141414", stock: 0, sku: "", weightGrams: "", lengthCm: "", widthCm: "", heightCm: "" }],
   };
+}
+
+function numOrNull(v?: string) {
+  if (v == null || v === "") return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? Math.max(0, Math.floor(n)) : null;
 }
 
 export function toPayload(form: ProductFormState) {
@@ -107,6 +130,10 @@ export function toPayload(form: ProductFormState) {
     status: form.status,
     tags: form.tags.split(",").map((t) => t.trim()).filter(Boolean),
     images: form.images.map((url) => ({ url })),
+    weightGrams: Math.max(1, Number(form.weightGrams || 300) || 300),
+    lengthCm: Math.max(1, Number(form.lengthCm || 30) || 30),
+    widthCm: Math.max(1, Number(form.widthCm || 20) || 20),
+    heightCm: Math.max(1, Number(form.heightCm || 5) || 5),
     variants: form.variants.map((v) => ({
       id: v.id,
       size: v.size.trim(),
@@ -114,6 +141,10 @@ export function toPayload(form: ProductFormState) {
       colorHex: v.colorHex,
       stock: Number(v.stock) || 0,
       sku: v.sku || "",
+      weightGrams: numOrNull(v.weightGrams),
+      lengthCm: numOrNull(v.lengthCm),
+      widthCm: numOrNull(v.widthCm),
+      heightCm: numOrNull(v.heightCm),
     })),
   };
 }
@@ -210,6 +241,17 @@ export function ProductEditor({
         </label>
       </div>
 
+      <fieldset className="mb-6 border hairline p-4">
+        <legend className="label px-1">Logística / envío (por defecto del producto)</legend>
+        <p className="text-[1.2rem] text-muted mb-3">Se usan para calcular peso real, volumétrico y tarifa de envío si la variante no tiene override.</p>
+        <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
+          <label className="block"><span className="text-[1.15rem] text-muted">Peso (g)</span><input className="field py-2" type="number" min={1} value={form.weightGrams} onChange={(e) => set("weightGrams", e.target.value)} /></label>
+          <label className="block"><span className="text-[1.15rem] text-muted">Largo (cm)</span><input className="field py-2" type="number" min={1} value={form.lengthCm} onChange={(e) => set("lengthCm", e.target.value)} /></label>
+          <label className="block"><span className="text-[1.15rem] text-muted">Ancho (cm)</span><input className="field py-2" type="number" min={1} value={form.widthCm} onChange={(e) => set("widthCm", e.target.value)} /></label>
+          <label className="block"><span className="text-[1.15rem] text-muted">Alto (cm)</span><input className="field py-2" type="number" min={1} value={form.heightCm} onChange={(e) => set("heightCm", e.target.value)} /></label>
+        </div>
+      </fieldset>
+
       {/* Imágenes */}
       <fieldset className="mb-6">
         <legend className="label">Imágenes (URL, una por línea)</legend>
@@ -230,40 +272,48 @@ export function ProductEditor({
 
       {/* Variantes */}
       <fieldset className="mb-8">
-        <legend className="label">Variantes (color + talla + stock)</legend>
+        <legend className="label">Variantes (color + talla + stock + logística opcional)</legend>
         <div className="flex flex-col">
           {form.variants.map((variant, index) => (
-            <div key={index} className="grid gap-2 grid-cols-[1fr_1fr_1fr_6rem_auto] items-end py-3 border-b hairline">
-              <label className="block">
-                <span className="text-[1.15rem] text-muted">Color</span>
-                <input className="field py-2" required value={variant.colorName} onChange={(e) => setVariant(index, { colorName: e.target.value })} />
-              </label>
-              <label className="block">
-                <span className="text-[1.15rem] text-muted">Hex</span>
-                <input className="field py-2" required pattern="#[0-9a-fA-F]{6}" value={variant.colorHex} onChange={(e) => setVariant(index, { colorHex: e.target.value })} />
-              </label>
-              <label className="block">
-                <span className="text-[1.15rem] text-muted">Talla</span>
-                <input className="field py-2" required value={variant.size} onChange={(e) => setVariant(index, { size: e.target.value })} />
-              </label>
-              <label className="block">
-                <span className="text-[1.15rem] text-muted">Stock</span>
-                <input className="field py-2" required type="number" min={0} value={variant.stock} onChange={(e) => setVariant(index, { stock: Number(e.target.value) })} />
-              </label>
-              <button
-                type="button"
-                className="text-[1.3rem] underline text-muted py-2"
-                onClick={() => setForm((f) => ({ ...f, variants: f.variants.filter((_, i) => i !== index) }))}
-              >
-                Quitar
-              </button>
+            <div key={index} className="py-3 border-b hairline">
+              <div className="grid gap-2 grid-cols-[1fr_1fr_1fr_6rem_auto] items-end">
+                <label className="block">
+                  <span className="text-[1.15rem] text-muted">Color</span>
+                  <input className="field py-2" required value={variant.colorName} onChange={(e) => setVariant(index, { colorName: e.target.value })} />
+                </label>
+                <label className="block">
+                  <span className="text-[1.15rem] text-muted">Hex</span>
+                  <input className="field py-2" required pattern="#[0-9a-fA-F]{6}" value={variant.colorHex} onChange={(e) => setVariant(index, { colorHex: e.target.value })} />
+                </label>
+                <label className="block">
+                  <span className="text-[1.15rem] text-muted">Talla</span>
+                  <input className="field py-2" required value={variant.size} onChange={(e) => setVariant(index, { size: e.target.value })} />
+                </label>
+                <label className="block">
+                  <span className="text-[1.15rem] text-muted">Stock</span>
+                  <input className="field py-2" required type="number" min={0} value={variant.stock} onChange={(e) => setVariant(index, { stock: Number(e.target.value) })} />
+                </label>
+                <button
+                  type="button"
+                  className="text-[1.3rem] underline text-muted py-2"
+                  onClick={() => setForm((f) => ({ ...f, variants: f.variants.filter((_, i) => i !== index) }))}
+                >
+                  Quitar
+                </button>
+              </div>
+              <div className="grid gap-2 grid-cols-2 md:grid-cols-4 mt-2">
+                <label className="block"><span className="text-[1.1rem] text-muted">Override peso (g)</span><input className="field py-1 text-[1.2rem]" type="number" min={0} placeholder="(usa producto)" value={variant.weightGrams ?? ""} onChange={(e) => setVariant(index, { weightGrams: e.target.value })} /></label>
+                <label className="block"><span className="text-[1.1rem] text-muted">Override largo (cm)</span><input className="field py-1 text-[1.2rem]" type="number" min={0} placeholder="(usa producto)" value={variant.lengthCm ?? ""} onChange={(e) => setVariant(index, { lengthCm: e.target.value })} /></label>
+                <label className="block"><span className="text-[1.1rem] text-muted">Override ancho (cm)</span><input className="field py-1 text-[1.2rem]" type="number" min={0} placeholder="(usa producto)" value={variant.widthCm ?? ""} onChange={(e) => setVariant(index, { widthCm: e.target.value })} /></label>
+                <label className="block"><span className="text-[1.1rem] text-muted">Override alto (cm)</span><input className="field py-1 text-[1.2rem]" type="number" min={0} placeholder="(usa producto)" value={variant.heightCm ?? ""} onChange={(e) => setVariant(index, { heightCm: e.target.value })} /></label>
+              </div>
             </div>
           ))}
         </div>
         <button
           type="button"
           className="button button--secondary mt-3"
-          onClick={() => setForm((f) => ({ ...f, variants: [...f.variants, { size: "M", colorName: "Negro", colorHex: "#141414", stock: 0 }] }))}
+          onClick={() => setForm((f) => ({ ...f, variants: [...f.variants, { size: "M", colorName: "Negro", colorHex: "#141414", stock: 0, sku: "", weightGrams: "", lengthCm: "", widthCm: "", heightCm: "" }] }))}
         >
           + Añadir variante
         </button>

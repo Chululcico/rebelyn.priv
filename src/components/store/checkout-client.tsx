@@ -1,13 +1,25 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { formatMoney } from "@/lib/money";
 import { useCart } from "./cart-context";
 
-type ShippingMethod = { id: string; name: string; priceCents: number; freeOverCents: number | null; estimatedDays: string };
+type LegacyMethod = { id: string; name: string; priceCents: number; freeOverCents: number | null; estimatedDays: string };
+type QuoteService = {
+  id: string;
+  serviceCode: string;
+  serviceName: string;
+  carrier: string;
+  deliveryType: string;
+  priceCents: number;
+  estimatedDays: string | null;
+  zone?: string;
+  source?: string;
+  freeApplied?: boolean;
+};
 
-type Props = { methods: ShippingMethod[] };
+type Props = { methods: LegacyMethod[] };
 
 const EMPTY = {
   email: "",
@@ -24,15 +36,93 @@ const EMPTY = {
 export function CheckoutClient({ methods }: Props) {
   const { lines, subtotalCents, discount, refresh } = useCart();
   const [shipping, setShipping] = useState(EMPTY);
-  const [method, setMethod] = useState(methods[0]?.id ?? "standard");
   const [note, setNote] = useState("");
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const activeMethod = methods.find((m) => m.id === method) ?? methods[0];
-  const shippingCents =
-    activeMethod?.freeOverCents != null && subtotalCents >= activeMethod.freeOverCents ? 0 : activeMethod?.priceCents ?? 0;
+  const [services, setServices] = useState<QuoteService[]>([]);
+  const [selectedServiceId, setSelectedServiceId] = useState("");
+  const [quoteLoading, setQuoteLoading] = useState(false);
+  const [quoteError, setQuoteError] = useState<string | null>(null);
+  const [quoteMode, setQuoteMode] = useState<string>("");
+
+  const canQuote = /^[0-9]{5}$/.test(shipping.postalCode) && (shipping.country || "ES").toUpperCase() === "ES";
+
+  useEffect(() => {
+    if (!canQuote) {
+      // Fallback a métodos legacy si no hay CP válido aún
+      setServices(
+        methods.map((m) => ({
+          id: `legacy:${m.id}`,
+          serviceCode: m.id.toUpperCase(),
+          serviceName: m.name,
+          carrier: "LEGACY",
+          deliveryType: "DOMICILIO",
+          priceCents:
+            m.freeOverCents != null && subtotalCents >= m.freeOverCents ? 0 : m.priceCents,
+          estimatedDays: m.estimatedDays,
+          freeApplied: m.freeOverCents != null && subtotalCents >= m.freeOverCents,
+        })),
+      );
+      setSelectedServiceId((prev) => prev || (methods[0] ? `legacy:${methods[0].id}` : ""));
+      setQuoteError(null);
+      return;
+    }
+
+    let cancelled = false;
+    const t = setTimeout(async () => {
+      setQuoteLoading(true);
+      setQuoteError(null);
+      try {
+        const res = await fetch("/api/shipping/quote", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            postalCode: shipping.postalCode,
+            province: shipping.province,
+            country: shipping.country || "ES",
+          }),
+        });
+        const data = await res.json();
+        if (cancelled) return;
+        if (!res.ok || !data?.ok) {
+          setServices([]);
+          setSelectedServiceId("");
+          setQuoteError(data?.reason || data?.error || "No se pudieron obtener tarifas de envío.");
+          setQuoteMode(data?.mode || "");
+          return;
+        }
+        const svcs: QuoteService[] = (data.services || []).map((s: any) => ({
+          id: s.id,
+          serviceCode: s.serviceCode,
+          serviceName: s.serviceName,
+          carrier: s.carrier,
+          deliveryType: s.deliveryType,
+          priceCents: s.priceCents,
+          estimatedDays: s.estimatedDays,
+          zone: s.zone,
+          source: s.source,
+          freeApplied: s.freeApplied,
+        }));
+        setServices(svcs);
+        setQuoteMode(data.mode || "");
+        setSelectedServiceId((prev) => (svcs.some((s) => s.id === prev) ? prev : svcs[0]?.id || ""));
+        if (svcs.length === 0) setQuoteError(data?.reason || "No hay servicios disponibles para este destino.");
+      } catch {
+        if (!cancelled) setQuoteError("Error al consultar tarifas de envío.");
+      } finally {
+        if (!cancelled) setQuoteLoading(false);
+      }
+    }, 350);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [canQuote, shipping.postalCode, shipping.province, shipping.country, methods, subtotalCents]);
+
+  const activeService = useMemo(() => services.find((s) => s.id === selectedServiceId) || services[0] || null, [services, selectedServiceId]);
+  const shippingCents = activeService?.priceCents ?? 0;
   const discountCents = discount?.valid ? discount.discountCents : 0;
   const estimatedTotal = Math.max(0, subtotalCents - discountCents) + shippingCents;
 
@@ -48,6 +138,10 @@ export function CheckoutClient({ methods }: Props) {
   async function createOrder(event: React.FormEvent) {
     event.preventDefault();
     setError(null);
+    if (!activeService?.id) {
+      setError("Selecciona un método de envío disponible.");
+      return;
+    }
     setSubmitting(true);
     try {
       const res = await fetch("/api/checkout", {
@@ -55,7 +149,9 @@ export function CheckoutClient({ methods }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...shipping,
-          shippingMethod: method,
+          shippingMethod: activeService.serviceCode || "standard",
+          shippingServiceId: activeService.id,
+          shippingServiceCode: activeService.serviceCode,
           discountCode: discount?.valid ? discount.code : "",
           customerNote: note,
           acceptTerms: true,
@@ -65,6 +161,16 @@ export function CheckoutClient({ methods }: Props) {
       if (!res.ok) {
         setError(data.error ?? "No hemos podido crear el pedido.");
         if (data.orderNumber) setError(`${data.error ?? "Pago no disponible."} Pedido ${data.orderNumber}.`);
+        // Refrescar cotización por si cambió algo
+        if (canQuote) {
+          try {
+            const q = await fetch("/api/shipping/quote", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ postalCode: shipping.postalCode, province: shipping.province, country: shipping.country || "ES" }) }).then((r) => r.json());
+            if (q?.services) {
+              setServices(q.services);
+              setSelectedServiceId(q.services[0]?.id || "");
+            }
+          } catch {}
+        }
         return;
       }
       await refresh();
@@ -108,7 +214,7 @@ export function CheckoutClient({ methods }: Props) {
               </label>
               <label className="block mb-4">
                 <span className="label">Código postal</span>
-                <input className="field" required pattern="[0-9]{5}" value={shipping.postalCode} onChange={(e) => setShipping((s) => ({ ...s, postalCode: e.target.value }))} autoComplete="postal-code" inputMode="numeric" />
+                <input className="field" required pattern="[0-9]{5}" value={shipping.postalCode} onChange={(e) => setShipping((s) => ({ ...s, postalCode: e.target.value.replace(/\D/g, "").slice(0, 5) }))} autoComplete="postal-code" inputMode="numeric" />
               </label>
               <label className="block mb-4">
                 <span className="label">Ciudad</span>
@@ -120,27 +226,35 @@ export function CheckoutClient({ methods }: Props) {
               </label>
               <label className="block mb-4">
                 <span className="label">País</span>
-                <input className="field" required value={shipping.country} onChange={(e) => setShipping((s) => ({ ...s, country: e.target.value }))} autoComplete="country" maxLength={2} />
+                <input className="field" required value={shipping.country} onChange={(e) => setShipping((s) => ({ ...s, country: e.target.value.toUpperCase().slice(0, 2) }))} autoComplete="country" maxLength={2} />
               </label>
             </div>
 
-            <h2 className="text-[1.6rem] uppercase tracking-[0.14em] mt-6 mb-4">Método de envío</h2>
-            <div className="flex flex-col gap-2 mb-6">
-              {methods.map((m) => (
-                <label key={m.id} className="flex items-center justify-between border hairline p-4 cursor-pointer has-[:checked]:border-ink">
-                  <span className="flex items-center gap-3">
-                    <input type="radio" name="shipping" value={m.id} checked={method === m.id} onChange={() => setMethod(m.id)} />
-                    <span>
-                      <span className="text-[1.4rem]">{m.name}</span>
-                      <span className="block text-[1.2rem] text-muted">{m.estimatedDays}</span>
+            <h2 className="text-[1.6rem] uppercase tracking-[0.14em] mt-6 mb-2">Método de envío</h2>
+            <p className="text-[1.2rem] text-muted mb-3">Origen: Elda (Alicante). Las tarifas se calculan en servidor según destino, peso/dimensiones y configuración.</p>
+            {quoteLoading && <p className="text-[1.3rem] text-muted mb-3">Calculando tarifas de envío…</p>}
+            {quoteError && <p className="text-[1.3rem] text-magenta mb-3" role="status">{quoteError}</p>}
+            {!quoteLoading && services.length > 0 && (
+              <div className="flex flex-col gap-2 mb-6">
+                {services.map((m) => (
+                  <label key={m.id} className="flex items-center justify-between border hairline p-4 cursor-pointer has-[:checked]:border-ink">
+                    <span className="flex items-center gap-3">
+                      <input type="radio" name="shipping" value={m.id} checked={selectedServiceId === m.id} onChange={() => setSelectedServiceId(m.id)} required />
+                      <span>
+                        <span className="text-[1.4rem]">{m.serviceName}</span>
+                        <span className="block text-[1.2rem] text-muted">
+                          {[m.estimatedDays, m.deliveryType ? `Entrega: ${m.deliveryType.toLowerCase()}` : null, m.zone ? `Zona: ${m.zone}` : null].filter(Boolean).join(" · ")}
+                        </span>
+                      </span>
                     </span>
-                  </span>
-                  <span className="text-[1.4rem]">
-                    {m.freeOverCents != null && subtotalCents >= m.freeOverCents ? "Gratis" : formatMoney(m.priceCents)}
-                  </span>
-                </label>
-              ))}
-            </div>
+                    <span className="text-[1.4rem]">{m.priceCents === 0 ? "Gratis" : formatMoney(m.priceCents)}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+            {!quoteLoading && services.length === 0 && !quoteError && (
+              <p className="text-[1.3rem] text-muted mb-6">Introduce un código postal válido para ver las opciones de envío.</p>
+            )}
 
             <label className="block mb-4">
               <span className="label">Notas del pedido (opcional)</span>
@@ -159,11 +273,11 @@ export function CheckoutClient({ methods }: Props) {
 
             {error && <p className="text-[1.35rem] text-magenta mb-4" role="alert">{error}</p>}
 
-            <button className="button w-full" type="submit" disabled={submitting || !acceptTerms}>
-              {submitting ? "Redirigiendo a SumUp…" : `Pagar con SumUp · ${formatMoney(estimatedTotal)}`}
+            <button className="button w-full" type="submit" disabled={submitting || !acceptTerms || !activeService}>
+              {submitting ? "Redirigiendo al pago…" : `Pagar con SumUp · ${formatMoney(estimatedTotal)}`}
             </button>
             <p className="text-[1.2rem] text-muted mt-3 text-center">
-              Serás redirigido a la pasarela segura de SumUp para completar el pago.
+              El importe del envío se valida en servidor al confirmar el pedido. Serás redirigido a la pasarela segura de SumUp.
             </p>
           </form>
         </div>
@@ -191,7 +305,7 @@ export function CheckoutClient({ methods }: Props) {
             <span>Total</span>
             <span>{formatMoney(estimatedTotal)}</span>
           </div>
-          <p className="text-[1.2rem] text-muted mt-3">Impuestos incluidos.</p>
+          <p className="text-[1.2rem] text-muted mt-3">Impuestos incluidos. Total final confirmado en servidor.</p>
         </aside>
       </div>
     </section>

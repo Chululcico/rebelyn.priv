@@ -30,6 +30,10 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
     status: product.status,
     tags: product.tags.map((t) => t.tag).join(", "),
     images: product.images.map((img) => img.url),
+    weightGrams: String((product as any).weightGrams ?? 300),
+    lengthCm: String((product as any).lengthCm ?? 30),
+    widthCm: String((product as any).widthCm ?? 20),
+    heightCm: String((product as any).heightCm ?? 5),
     variants: product.variants.map((v) => ({
       id: v.id,
       size: v.size,
@@ -37,6 +41,10 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
       colorHex: v.color?.hex ?? "#141414",
       stock: v.stock,
       sku: v.sku ?? "",
+      weightGrams: (v as any).weightGrams != null ? String((v as any).weightGrams) : "",
+      lengthCm: (v as any).lengthCm != null ? String((v as any).lengthCm) : "",
+      widthCm: (v as any).widthCm != null ? String((v as any).widthCm) : "",
+      heightCm: (v as any).heightCm != null ? String((v as any).heightCm) : "",
     })),
   };
 

@@ -53,6 +53,10 @@ export const PATCH = withApi<Ctx>(
           ...(input.categoryId !== undefined ? { categoryId: input.categoryId || null } : {}),
           ...(input.featured !== undefined ? { featured: input.featured } : {}),
           ...(input.status !== undefined ? { status: input.status } : {}),
+          ...(input.weightGrams !== undefined ? { weightGrams: input.weightGrams } : {}),
+          ...(input.lengthCm !== undefined ? { lengthCm: input.lengthCm } : {}),
+          ...(input.widthCm !== undefined ? { widthCm: input.widthCm } : {}),
+          ...(input.heightCm !== undefined ? { heightCm: input.heightCm } : {}),
         },
       });
 
@@ -86,6 +90,10 @@ export const PATCH = withApi<Ctx>(
                     stock: newStock,
                     priceCents: variant.priceCents ?? null,
                     sku: variant.sku || null,
+                    weightGrams: variant.weightGrams ?? null,
+                    lengthCm: variant.lengthCm ?? null,
+                    widthCm: variant.widthCm ?? null,
+                    heightCm: variant.heightCm ?? null,
                   },
                 });
                 await tx.inventoryMovement.create({
@@ -101,14 +109,34 @@ export const PATCH = withApi<Ctx>(
               } else {
                 await tx.productVariant.update({
                   where: { id: variant.id },
-                  data: { size: variant.size, colorId: color.id, priceCents: variant.priceCents ?? null, sku: variant.sku || null },
+                  data: {
+                    size: variant.size,
+                    colorId: color.id,
+                    priceCents: variant.priceCents ?? null,
+                    sku: variant.sku || null,
+                    weightGrams: variant.weightGrams ?? null,
+                    lengthCm: variant.lengthCm ?? null,
+                    widthCm: variant.widthCm ?? null,
+                    heightCm: variant.heightCm ?? null,
+                  },
                 });
               }
               continue;
             }
           }
           await tx.productVariant.create({
-            data: { productId: id, colorId: color.id, size: variant.size, stock: variant.stock, priceCents: variant.priceCents ?? null, sku: variant.sku || null },
+            data: {
+              productId: id,
+              colorId: color.id,
+              size: variant.size,
+              stock: variant.stock,
+              priceCents: variant.priceCents ?? null,
+              sku: variant.sku || null,
+              weightGrams: variant.weightGrams ?? null,
+              lengthCm: variant.lengthCm ?? null,
+              widthCm: variant.widthCm ?? null,
+              heightCm: variant.heightCm ?? null,
+            },
           });
         }
 

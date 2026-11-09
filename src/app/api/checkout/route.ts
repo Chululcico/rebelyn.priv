@@ -18,6 +18,8 @@ export const POST = withApi(
     const result = await createOrderFromCart({
       cartId: cart.id,
       shippingMethod: input.shippingMethod,
+      shippingServiceId: input.shippingServiceId || undefined,
+      shippingServiceCode: input.shippingServiceCode || undefined,
       discountCode: input.discountCode || null,
       input: {
         email: input.email,
@@ -29,6 +31,8 @@ export const POST = withApi(
         province: input.province,
         postalCode: input.postalCode,
         country: input.country,
+        shippingServiceId: input.shippingServiceId || undefined,
+        shippingServiceCode: input.shippingServiceCode || undefined,
         userId: user?.id ?? null,
         customerNote: input.customerNote,
       },

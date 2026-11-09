@@ -4,6 +4,7 @@ import type { Prisma } from "@prisma/client";
 import { generateOrderNumber } from "@/lib/slug";
 import { applyDiscount } from "@/lib/discounts";
 import { quoteShipping } from "@/lib/shipping";
+import { validateShippingSelection } from "@/lib/shipping/engine";
 import { consumeStock, StockError, validateStockForItems } from "@/lib/stock";
 import { sendEmail } from "@/lib/emails";
 import { orderPaidEmail } from "@/lib/emails/templates";
@@ -19,6 +20,8 @@ export type CheckoutInput = {
   postalCode: string;
   country?: string;
   shippingMethod?: string;
+  shippingServiceId?: string;
+  shippingServiceCode?: string;
   discountCode?: string;
   userId?: string | null;
   customerNote?: string;
@@ -36,8 +39,14 @@ export type OrderTotals = {
 /**
  * Recalcula TODOS los importes en servidor a partir de la BD.
  * Es la única fuente de verdad: el navegador no envía precios.
+ * Si se indica destino + servicio, el envío se valida/cotiza en servidor (anti-manipulación).
  */
-export async function computeTotals(cartId: string, shippingMethod = "standard", discountCode?: string | null): Promise<
+export async function computeTotals(
+  cartId: string,
+  shippingMethod = "standard",
+  discountCode?: string | null,
+  shippingSelection?: { destination?: { postalCode: string; province?: string; country?: string }; serviceId?: string; serviceCode?: string },
+): Promise<
   { ok: true; totals: OrderTotals; lines: { variantId: string; qty: number; unitPriceCents: number; totalCents: number; productName: string; productSlug: string; size: string; colorName: string | null; imageUrl: string | null }[] } | { ok: false; error: string }
 > {
   const cart = await db.cart.findUnique({
@@ -78,7 +87,6 @@ export async function computeTotals(cartId: string, shippingMethod = "standard",
   if (lines.length === 0) return { ok: false, error: "El carrito está vacío" };
 
   const subtotalCents = lines.reduce((sum, l) => sum + l.totalCents, 0);
-  const shipping = await quoteShipping(subtotalCents, shippingMethod);
 
   let discountCents = 0;
   let appliedCode: string | null = null;
@@ -101,7 +109,27 @@ export async function computeTotals(cartId: string, shippingMethod = "standard",
     }
   }
 
-  const shippingCents = shipping?.priceCents ?? 0;
+  // Envío: si hay destino+selección, validar en servidor (tarifas/Correos config). Si no, legacy.
+  let shippingCents = 0;
+  let methodId = shippingMethod || "standard";
+  const dest = shippingSelection?.destination;
+  const selId = shippingSelection?.serviceId;
+  if (dest?.postalCode && selId) {
+    const validated = await validateShippingSelection({
+      cartId,
+      destination: { postalCode: dest.postalCode, province: dest.province, country: dest.country },
+      selectedId: selId,
+      selectedServiceCode: shippingSelection?.serviceCode,
+    });
+    if (!validated.ok) return { ok: false, error: validated.error };
+    shippingCents = validated.service.priceCents;
+    methodId = `${validated.service.carrier}:${validated.service.serviceCode}`;
+  } else {
+    const shipping = await quoteShipping(subtotalCents, shippingMethod);
+    shippingCents = shipping?.priceCents ?? 0;
+    methodId = shipping?.methodId ?? "standard";
+  }
+
   const totalCents = Math.max(0, subtotalCents - discountCents) + shippingCents;
 
   return {
@@ -112,7 +140,7 @@ export async function computeTotals(cartId: string, shippingMethod = "standard",
       discountCents,
       totalCents,
       discountCode: appliedCode,
-      methodId: shipping?.methodId ?? "standard",
+      methodId,
     },
     lines,
   };
@@ -128,9 +156,20 @@ export async function createOrderFromCart(params: {
   cartId: string;
   input: CheckoutInput;
   shippingMethod?: string;
+  shippingServiceId?: string;
+  shippingServiceCode?: string;
   discountCode?: string | null;
 }): Promise<{ orderId: string; orderNumber: string; totals: OrderTotals } | { error: string }> {
-  const computed = await computeTotals(params.cartId, params.shippingMethod ?? "standard", params.discountCode);
+  const computed = await computeTotals(
+    params.cartId,
+    params.shippingMethod ?? "standard",
+    params.discountCode,
+    {
+      destination: { postalCode: params.input.postalCode, province: params.input.province, country: params.input.country },
+      serviceId: params.shippingServiceId || params.input.shippingServiceId || undefined,
+      serviceCode: params.shippingServiceCode || params.input.shippingServiceCode || undefined,
+    },
+  );
   if (!computed.ok) return { error: computed.error };
 
   const stockProblem = await validateStockForItems(computed.lines);

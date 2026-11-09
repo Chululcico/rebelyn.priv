@@ -45,8 +45,10 @@ export const checkoutSchema = z.object({
   city: z.string().trim().min(2).max(60),
   province: z.string().trim().min(2).max(60),
   postalCode: z.string().trim().regex(/^[0-9]{5}$/, "Código postal de 5 dígitos"),
-  country: z.string().trim().length(2).default("ES"),
-  shippingMethod: z.string().max(40).default("standard"),
+  country: z.string().trim().max(2).default("ES"),
+  shippingMethod: z.string().max(120).default("standard"), // legacy/fallback
+  shippingServiceId: z.string().trim().max(120).optional().or(z.literal("")), // id de tarifa/servicio cotizado
+  shippingServiceCode: z.string().trim().max(80).optional().or(z.literal("")),
   discountCode: z.string().trim().max(40).optional().or(z.literal("")),
   customerNote: z.string().trim().max(500).optional().or(z.literal("")),
   acceptTerms: z.literal(true, { errorMap: () => ({ message: "Debes aceptar las condiciones de compra" }) }),
@@ -101,6 +103,11 @@ export const productVariantInputSchema = z.object({
   stock: z.number().int().min(0).max(99999),
   priceCents: z.number().int().min(0).nullable().optional(),
   sku: z.string().trim().max(60).optional().or(z.literal("")),
+  // Override logístico opcional (si no se define, usa el del producto)
+  weightGrams: z.number().int().min(0).max(10_000_000).nullable().optional(),
+  lengthCm: z.number().int().min(0).max(500).nullable().optional(),
+  widthCm: z.number().int().min(0).max(500).nullable().optional(),
+  heightCm: z.number().int().min(0).max(500).nullable().optional(),
 });
 
 export const productInputSchema = z.object({
@@ -116,6 +123,11 @@ export const productInputSchema = z.object({
   status: z.enum(["DRAFT", "ACTIVE", "ARCHIVED"]).default("ACTIVE"),
   tags: z.array(z.string().trim().min(1).max(40)).max(20).default([]),
   images: z.array(z.object({ url: z.string().trim().min(1).max(500), alt: z.string().trim().max(160).optional() })).max(12).default([]),
+  // Datos logísticos por defecto del producto (para cálculo de envío/paquete)
+  weightGrams: z.number().int().min(1).max(10_000_000).default(300),
+  lengthCm: z.number().int().min(1).max(500).default(30),
+  widthCm: z.number().int().min(1).max(500).default(20),
+  heightCm: z.number().int().min(1).max(500).default(5),
   variants: z.array(productVariantInputSchema).min(1, "Debe existir al menos una variante"),
 });
 

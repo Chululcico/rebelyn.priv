@@ -60,6 +60,10 @@ export const POST = withApi(
           categoryId: input.categoryId || null,
           featured: input.featured,
           status: input.status,
+          weightGrams: input.weightGrams ?? 300,
+          lengthCm: input.lengthCm ?? 30,
+          widthCm: input.widthCm ?? 20,
+          heightCm: input.heightCm ?? 5,
         },
       });
 
@@ -78,6 +82,10 @@ export const POST = withApi(
             stock: variant.stock,
             priceCents: variant.priceCents ?? null,
             sku: variant.sku || null,
+            weightGrams: variant.weightGrams ?? null,
+            lengthCm: variant.lengthCm ?? null,
+            widthCm: variant.widthCm ?? null,
+            heightCm: variant.heightCm ?? null,
           },
         });
       }

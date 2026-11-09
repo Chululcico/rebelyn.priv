@@ -112,6 +112,11 @@ model Product {
   category       Category?     @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   featured       Boolean       @default(false)
   status         ProductStatus @default(ACTIVE)
+  // Datos logísticos por defecto (para cálculo de envío/paquete). Se usan si la variante no los define.
+  weightGrams    Int           @default(300)
+  lengthCm       Int           @default(30)
+  widthCm        Int           @default(20)
+  heightCm       Int           @default(5)
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
@@ -161,6 +166,11 @@ model ProductVariant {
   sku       String?  @unique
   // Precio propio opcional (si una variante concreta cuesta distinto).
   priceCents Int?
+  // Override logístico opcional (si no se define, usa el del producto).
+  weightGrams Int?
+  lengthCm    Int?
+  widthCm     Int?
+  heightCm    Int?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -497,4 +507,32 @@ model AuditLog {
 
   @@index([adminUserId, createdAt])
   @@index([entity, entityId])
+}
+
+// ── Envíos (tarifas configurables / Correos) ─────────────────────────────────
+// Tabla de tarifas importable/editable. Soporta zonas de España y servicios
+// tipo Correos (Paq Estándar/Premium, oficina, Citypaq, domicilio) u otros.
+// "source" distingue tarifas públicas/contratadas/manuales.
+
+model ShippingRate {
+  id              String   @id @default(cuid())
+  carrier         String   @default("CORREOS") // CORREOS, CUSTOM...
+  serviceCode     String   // PAQ_ESTANDAR, PAQ_PREMIUM, OFICINA, CITYPAQ, DOMICILIO...
+  serviceName     String
+  zone            String   // PENINSULA, BALEARES, CANARIAS, CEUTA, MELILLA, ALL
+  minGrams        Int      @default(0)
+  maxGrams        Int
+  // Precio base en céntimos (tarifa). El motor aplica margen/reglas por separado.
+  basePriceCents  Int
+  currency        String   @default("EUR")
+  source          String   @default("MANUAL") // PUBLIC, CONTRACT, MANUAL
+  deliveryType    String   @default("DOMICILIO") // DOMICILIO, OFICINA, CITYPAQ
+  estimatedDays   String?
+  active          Boolean  @default(true)
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([carrier, serviceCode, zone, active])
+  @@index([minGrams, maxGrams])
 }
