@@ -31,11 +31,10 @@ export async function GET() {
   };
 
   try {
-    const { getAdminAuth } = await import("@/lib/firebase/admin");
-    const auth = getAdminAuth();
-    steps.firebaseAdmin = { ok: true, hasAuth: !!auth };
+    const mod = await import("@/lib/firebase/verify-id-token");
+    steps.tokenVerifier = { ok: true, hasVerify: typeof mod.verifyFirebaseIdToken === "function" };
   } catch (e) {
-    steps.firebaseAdmin = {
+    steps.tokenVerifier = {
       ok: false,
       error: e instanceof Error ? e.message : String(e),
       stack: e instanceof Error ? e.stack?.split("\n").slice(0, 5).join("\n") : undefined,

@@ -1,6 +1,6 @@
 ﻿import { NextResponse } from "next/server";
 import { withApi, readJson } from "@/lib/api";
-import { adminAuth } from "@/lib/firebase/admin";
+import { verifyFirebaseIdToken } from "@/lib/firebase/verify-id-token";
 import { db } from "@/lib/db";
 import { createSession, mergeCarts } from "@/lib/auth";
 import { cookies } from "next/headers";
@@ -13,7 +13,7 @@ export const runtime = "nodejs";
 export const POST = withApi(
   async (request: Request) => {
     const { idToken } = schema.parse(await readJson(request));
-    const decoded = await adminAuth.verifyIdToken(idToken);
+    const decoded = await verifyFirebaseIdToken(idToken);
     const email = decoded.email?.toLowerCase();
 
     if (!email) {
