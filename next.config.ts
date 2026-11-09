@@ -26,6 +26,7 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [{ protocol: "https", hostname: "**" }],
   },
+  serverExternalPackages: ["firebase-admin"],
   async headers() {
     return [{ source: "/(.*)", headers: securityHeaders }];
   },
