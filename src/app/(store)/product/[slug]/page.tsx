@@ -4,6 +4,7 @@ import { getProductBySlug, getRelatedProducts, type ProductCardData } from "@/li
 import { formatMoney, isOnSale, percentOff } from "@/lib/money";
 import { ProductForm } from "@/components/store/product-form";
 import { ProductCard } from "@/components/store/product-card";
+import { ProductGallery } from "@/components/store/product-gallery";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -67,43 +68,7 @@ export default async function ProductPage({ params }: Props) {
       <section className="page-width py-8">
         <div className="grid gap-8 lg:grid-cols-[0.8fr_1fr] lg:gap-14">
           {/* Galería */}
-          <div className="flex flex-col gap-3 lg:max-w-[42rem] lg:mx-0">
-            <div className="bg-wash aspect-[3/4] max-h-[78vh] overflow-hidden">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={product.images[0] ?? ""} alt={product.name} className="w-full h-full object-cover" fetchPriority="high" />
-            </div>
-            <div className="bg-wash aspect-[3/4] max-h-[78vh] overflow-hidden group cursor-zoom-in" onClick={() => {
-              const img = document.querySelector('[data-main-product-img]') as HTMLImageElement | null;
-              if (!img) return;
-              const overlay = document.createElement("div");
-              overlay.className = "fixed inset-0 z-[9999] bg-black/90 flex items-center justify-center p-6 cursor-zoom-out";
-              const big = document.createElement("img");
-              big.src = img.src;
-              big.alt = img.alt;
-              big.className = "max-w-[95vw] max-h-[95vh] object-contain rounded";
-              overlay.appendChild(big);
-              overlay.addEventListener("click", () => overlay.remove());
-              document.body.appendChild(overlay);
-            }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img data-main-product-img src={product.images[0] ?? ""} alt={product.name} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" fetchPriority="high" />
-            </div>
-            {product.images.length > 1 && (
-              <div className="grid grid-cols-5 gap-3">
-                {product.images.slice(1).map((src) => (
-                  /* eslint-disable-next-line @next/next/no-img-element */
-                  <img key={src} src={src} alt="" className="w-full aspect-[3/4] object-cover bg-wash cursor-pointer" loading="lazy" onClick={(e) => {
-                    const main = document.querySelector('[data-main-product-img]') as HTMLImageElement | null;
-                    if (main) {
-                      main.src = src;
-                    }
-                    (e.currentTarget.parentElement?.querySelectorAll('img[data-thumb]') as NodeListOf<HTMLImageElement>).forEach((t) => t.classList.remove('ring-2','ring-ink'));
-                    e.currentTarget.classList.add('ring-2','ring-ink');
-                  }} data-thumb />
-                ))}
-              </div>
-            )}
-          </div>
+          <ProductGallery images={product.images} name={product.name} />
 
           {/* Información */}
           <div className="lg:sticky lg:top-24 self-start">
