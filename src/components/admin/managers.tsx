@@ -78,33 +78,64 @@ type Discount = { id: string; code: string; type: string; value: number; active:
 export function DiscountsManager() {
   const [discounts, setDiscounts] = useState<Discount[]>([]);
   const [form, setForm] = useState({ code: "", type: "PERCENTAGE", value: "", minOrder: "", maxUses: "" });
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   const load = () => api<{ discounts: Discount[] }>("/api/admin/discounts").then((d) => setDiscounts(d.discounts)).catch((e) => setError(e.message));
   useEffect(() => { void load(); }, []);
 
-  async function create(event: React.FormEvent) {
+  function resetForm() {
+    setEditingId(null);
+    setForm({ code: "", type: "PERCENTAGE", value: "", minOrder: "", maxUses: "" });
+  }
+
+  async function submit(event: React.FormEvent) {
     event.preventDefault();
     setSaving(true);
     setError(null);
     try {
-      await api("/api/admin/discounts", {
-        method: "POST",
-        body: JSON.stringify({
-          code: form.code,
-          type: form.type,
-          value: Number(form.value),
-          minOrderCents: Math.round(parseFloat(form.minOrder || "0") * 100),
-          maxUses: form.maxUses ? Number(form.maxUses) : null,
-        }),
-      });
-      setForm({ code: "", type: "PERCENTAGE", value: "", minOrder: "", maxUses: "" });
+      const payload = {
+        code: form.code,
+        type: form.type,
+        value: Number(form.value),
+        minOrderCents: Math.round(parseFloat(form.minOrder || "0") * 100),
+        maxUses: form.maxUses ? Number(form.maxUses) : null,
+      };
+      if (editingId) {
+        await api(`/api/admin/discounts/${editingId}`, { method: "PATCH", body: JSON.stringify(payload) });
+      } else {
+        await api("/api/admin/discounts", { method: "POST", body: JSON.stringify(payload) });
+      }
+      resetForm();
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error");
     } finally {
       setSaving(false);
+    }
+  }
+
+  function edit(discount: Discount) {
+    setEditingId(discount.id);
+    setForm({
+      code: discount.code,
+      type: discount.type,
+      value: String(discount.value),
+      minOrder: discount.minOrderCents > 0 ? (discount.minOrderCents / 100).toString() : "",
+      maxUses: discount.maxUses ? String(discount.maxUses) : "",
+    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  async function remove(discount: Discount) {
+    if (!confirm(`¿Eliminar el código ${discount.code}? No se puede deshacer.`)) return;
+    try {
+      await api(`/api/admin/discounts/${discount.id}`, { method: "DELETE" });
+      if (editingId === discount.id) resetForm();
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Error");
     }
   }
 
@@ -117,8 +148,8 @@ export function DiscountsManager() {
     <div>
       <h1 className="text-[2.2rem] uppercase tracking-[0.12em] mb-5">Descuentos</h1>
       {error && <p className="text-[1.35rem] text-magenta mb-4">{error}</p>}
-      <form onSubmit={create} className="border hairline bg-paper p-5 mb-6 grid gap-3 sm:grid-cols-5 items-end">
-        <label className="block"><span className="label">Código</span>
+      <form onSubmit={submit} className="border hairline bg-paper p-5 mb-6 grid gap-3 sm:grid-cols-5 items-end">
+        <label className="block"><span className="label">{editingId ? "Código (editando)" : "Código"}</span>
           <input className="field py-2" required value={form.code} onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))} />
         </label>
         <label className="block"><span className="label">Tipo</span>
@@ -133,7 +164,13 @@ export function DiscountsManager() {
         <label className="block"><span className="label">Pedido mín. €</span>
           <input className="field py-2" inputMode="decimal" value={form.minOrder} onChange={(e) => setForm((f) => ({ ...f, minOrder: e.target.value }))} />
         </label>
-        <button className="button" type="submit" disabled={saving}>{saving ? "Creando…" : "Crear"}</button>
+        <div className="flex gap-2">
+          <button className="button" type="submit" disabled={saving}>{saving ? "Guardando…" : editingId ? "Guardar cambios" : "Crear"}</button>
+          {editingId && <button className="button button--secondary" type="button" onClick={resetForm}>Cancelar</button>}
+        </div>
+        <label className="block sm:col-span-2"><span className="label">Usos máx. (vacío = ilimitado)</span>
+          <input className="field py-2" type="number" min={1} value={form.maxUses} onChange={(e) => setForm((f) => ({ ...f, maxUses: e.target.value }))} />
+        </label>
       </form>
       <ul className="border-t hairline bg-paper">
         {discounts.map((discount) => (
@@ -143,9 +180,13 @@ export function DiscountsManager() {
               {discount.minOrderCents > 0 && <span className="text-muted"> · mín {formatMoney(discount.minOrderCents)}</span>}
             </span>
             <span className="text-muted">{discount.usedCount} usos{discount.maxUses ? ` / ${discount.maxUses}` : ""}</span>
-            <button type="button" className={`underline ${discount.active ? "" : "text-muted"}`} onClick={() => toggle(discount)}>
-              {discount.active ? "Activo" : "Inactivo"}
-            </button>
+            <span className="flex gap-4">
+              <button type="button" className={`underline ${discount.active ? "" : "text-muted"}`} onClick={() => toggle(discount)}>
+                {discount.active ? "Activo" : "Inactivo"}
+              </button>
+              <button type="button" className="underline" onClick={() => edit(discount)}>Editar</button>
+              <button type="button" className="underline text-muted" onClick={() => remove(discount)}>Eliminar</button>
+            </span>
           </li>
         ))}
       </ul>
