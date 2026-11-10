@@ -1,8 +1,13 @@
 import type { Metadata } from "next";
+import { listShippingMethods } from "@/lib/shipping";
+import { formatMoney } from "@/lib/money";
 
 export const metadata: Metadata = { title: "Envíos" };
+export const dynamic = "force-dynamic";
 
-export default function ShippingPage() {
+export default async function ShippingPage() {
+  const methods = await listShippingMethods();
+
   return (
     <section className="page-width py-14 max-w-[72rem]">
       <h1 className="title-section">Envíos</h1>
@@ -10,14 +15,19 @@ export default function ShippingPage() {
         <h2 className="text-[1.6rem] uppercase tracking-[0.12em] mt-8 mb-3">Plazos</h2>
         <ul className="flex flex-col gap-2 text-[1.4rem] text-muted list-disc pl-6">
           <li>Preparación del pedido: 1–3 días laborables.</li>
-          <li>Envío península: 2–4 días laborables desde la salida del paquete.</li>
-          <li>Baleares: 3–5 días laborables. Consulta Canarias, Ceuta y Melilla por email.</li>
+          {methods.map((m) => (
+            <li key={m.id}>{m.name}: {m.estimatedDays}.</li>
+          ))}
         </ul>
 
         <h2 className="text-[1.6rem] uppercase tracking-[0.12em] mt-8 mb-3">Costes</h2>
         <ul className="flex flex-col gap-2 text-[1.4rem] text-muted list-disc pl-6">
-          <li>Envío estándar: 4,90 €.</li>
-          <li>Gratis a partir de 75 € de compra.</li>
+          {methods.map((m) => (
+            <li key={m.id}>
+              {m.name}: {formatMoney(m.priceCents)}
+              {m.freeOverCents != null && ` (gratis a partir de ${formatMoney(m.freeOverCents)} de compra)`}.
+            </li>
+          ))}
           <li>Los gastos se calculan y confirman en el paso de pago, antes de pagar.</li>
         </ul>
 

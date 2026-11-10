@@ -6,6 +6,7 @@ import { computeTotals, plainJson } from "@/lib/orders";
 import { validateStockForItems } from "@/lib/stock";
 import { getCurrentUser } from "@/lib/auth";
 import { env, sumupConfigured } from "@/lib/env";
+import { listShippingMethods } from "@/lib/shipping";
 import { db } from "@/lib/db";
 import { createSumupCheckout } from "@/lib/payments/sumup-provider";
 import { publicPaymentMethods } from "@/lib/payments";
@@ -28,17 +29,15 @@ export const POST = withApi(
     const user = await getCurrentUser();
     const cart = await ensureCart();
 
-    // 1. Totales SIEMPRE en servidor (carrito real de la BD + envío validado).
-    const computed = await computeTotals(
-      cart.id,
-      input.shippingMethod || "standard",
-      input.discountCode || null,
-      {
-        destination: { postalCode: input.postalCode, province: input.province, country: input.country },
-        serviceId: input.shippingServiceId || undefined,
-        serviceCode: input.shippingServiceCode || undefined,
-      },
-    );
+    // El método de envío debe ser uno de los activos (precio fijo configurado).
+    const activeMethods = await listShippingMethods();
+    const methodId = input.shippingMethod || "standard";
+    if (!activeMethods.some((m) => m.id === methodId)) {
+      return NextResponse.json({ error: "Método de envío no válido." }, { status: 400 });
+    }
+
+    // 1. Totales SIEMPRE en servidor (carrito real de la BD + envío de ajustes).
+    const computed = await computeTotals(cart.id, methodId, input.discountCode || null);
     if (!computed.ok) return NextResponse.json({ error: computed.error }, { status: 400 });
     const { totals, lines } = computed;
 
@@ -80,9 +79,8 @@ export const POST = withApi(
         lines: plainJson(lines),
         totals: plainJson(totals),
         shippingSelection: plainJson({
-          serviceId: input.shippingServiceId || null,
-          serviceCode: input.shippingServiceCode || null,
           methodId: totals.methodId,
+          shippingMethod: methodId,
           postalCode: input.postalCode,
           province: input.province,
           country: input.country,
