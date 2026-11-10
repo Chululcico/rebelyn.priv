@@ -14,6 +14,22 @@ import { publicPaymentMethods } from "@/lib/payments";
 export const runtime = "nodejs";
 
 /**
+ * URL pública de la tienda: usa la configurada (NEXT_PUBLIC_SITE_URL) si es
+ * válida; si no, la deduce de la petición real (host de Vercel). Evita
+ * redirigir a SumUp hacia localhost en producción.
+ */
+function resolveBaseUrl(request: Request): string {
+  const configured = env.storeUrl.replace(/\/+$/, "");
+  if (configured.startsWith("http") && !configured.includes("localhost")) return configured;
+  const host = request.headers.get("x-forwarded-host") || request.headers.get("host");
+  if (host) {
+    const proto = request.headers.get("x-forwarded-proto") || (host.startsWith("localhost") ? "http" : "https");
+    return `${proto}://${host}`;
+  }
+  return configured;
+}
+
+/**
  * PAGO PRIMERO → PEDIDO DESPUÉS.
  * Este endpoint NO registra ningún pedido. Solo:
  *  1. Valida los datos y recalcula totales en servidor (precios reales).
@@ -94,14 +110,17 @@ export const POST = withApi(
     });
 
     // 5. Crear el pago hospedado de SumUp (sin pedido todavía).
-    const returnUrl = `${env.storeUrl}/success?draft=${encodeURIComponent(draft.id)}`;
+    //    - redirect_url: a donde vuelve el navegador del cliente tras pagar.
+    //    - return_url:  webhook servidor a servidor con los cambios de estado.
+    const baseUrl = resolveBaseUrl(request);
     try {
       const checkout = await createSumupCheckout({
         reference: draft.id,
         amountCents: totals.totalCents,
         currency: "EUR",
-        description: `Compra en REBELYN · ${input.email}`,
-        returnUrl,
+        description: `REBELYN - compra de ${input.email}`,
+        returnUrl: `${baseUrl}/success?draft=${encodeURIComponent(draft.id)}`,
+        callbackUrl: `${baseUrl}/api/webhooks/sumup`,
       });
 
       await db.checkoutDraft.update({
@@ -121,7 +140,8 @@ export const POST = withApi(
       await db.checkoutDraft
         .update({ where: { id: draft.id }, data: { status: "FAILED", failureReason: "Error creando checkout en SumUp" } })
         .catch(() => undefined);
-      return NextResponse.json({ error: "No se pudo iniciar el pago. Inténtalo de nuevo en unos segundos." }, { status: 502 });
+      const reason = e instanceof Error ? e.message : "error desconocido";
+      return NextResponse.json({ error: `No se pudo iniciar el pago con SumUp: ${reason}` }, { status: 502 });
     }
   },
   { rateLimit: { limit: 15, windowMs: 10 * 60 * 1000, key: "checkout" } },

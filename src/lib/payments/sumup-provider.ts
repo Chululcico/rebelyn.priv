@@ -9,19 +9,50 @@ export type SumupCheckout = {
   status: string;
   amount: number;
   currency: string;
+  hosted_checkout?: { enabled: boolean };
+  hosted_checkout_url?: string;
+  /** Campo legacy: SumUp ya no lo devuelve, se mantiene como fallback. */
   checkout_url?: string;
 };
+
+/** Traduce el cuerpo de error de SumUp a un mensaje legible. */
+async function sumupErrorDetail(res: Response): Promise<string> {
+  const raw = await res.text().catch(() => "");
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (Array.isArray(parsed)) {
+      const parts = parsed
+        .map((e) => {
+          const err = e as { message?: string; param?: string; error_code?: string };
+          return [err.message, err.param, err.error_code].filter(Boolean).join(" ");
+        })
+        .filter(Boolean);
+      if (parts.length) return parts.join("; ");
+    } else if (parsed && typeof parsed === "object") {
+      const obj = parsed as { detail?: string; message?: string; title?: string };
+      return String(obj.detail ?? obj.message ?? obj.title ?? raw);
+    }
+  } catch {
+    /* respuesta no JSON */
+  }
+  return raw.slice(0, 300) || `HTTP ${res.status}`;
+}
 
 /**
  * Crea un checkout hospedado de SumUp SIN crear aún ningún pedido.
  * Devuelve la URL a la que redirigir al cliente para pagar con tarjeta.
+ * Docs: POST /v0.1/checkouts con hosted_checkout.enabled=true →
+ * la respuesta incluye hosted_checkout_url (checkout_url ya no existe).
  */
 export async function createSumupCheckout(params: {
   reference: string;
   amountCents: number;
   currency: string;
   description?: string;
+  /** URL a la que vuelve el NAVEGADOR del cliente tras pagar (botón de volver). */
   returnUrl: string;
+  /** URL de servidor a servidor donde SumUp notifica cambios de estado. */
+  callbackUrl?: string;
 }): Promise<{ id: string; checkoutUrl: string }> {
   if (!env.sumupApiKey || !env.sumupMerchantCode) {
     throw new Error("SumUp no está configurado (falta SUMUP_API_KEY o SUMUP_MERCHANT_CODE)");
@@ -39,19 +70,35 @@ export async function createSumupCheckout(params: {
       currency: params.currency.toUpperCase(),
       merchant_code: env.sumupMerchantCode,
       description: params.description ?? "Compra en REBELYN",
-      return_url: params.returnUrl,
       redirect_url: params.returnUrl,
+      return_url: params.callbackUrl ?? params.returnUrl,
+      hosted_checkout: { enabled: true },
     }),
   });
 
   if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Error al crear checkout de SumUp: ${text}`);
+    const detail = await sumupErrorDetail(res);
+    if (res.status === 401) {
+      throw new Error(
+        "La clave de API de SumUp no es válida o ha caducado (HTTP 401). Genera una nueva API key en el portal de desarrolladores de SumUp y actualiza la variable SUMUP_API_KEY en Vercel.",
+      );
+    }
+    if (res.status === 403) {
+      throw new Error(
+        "SumUp no acepta la petición (HTTP 403): revisa que SUMUP_MERCHANT_CODE corresponda a la cuenta de la clave API en Vercel.",
+      );
+    }
+    throw new Error(`SumUp rechazó crear el pago (HTTP ${res.status}): ${detail}`);
   }
 
   const data = (await res.json()) as SumupCheckout;
-  if (!data.checkout_url) throw new Error("SumUp no devolvió la URL de pago");
-  return { id: data.id, checkoutUrl: data.checkout_url };
+  const checkoutUrl = data.hosted_checkout_url ?? data.checkout_url ?? null;
+  if (!checkoutUrl) {
+    throw new Error(
+      `SumUp no devolvió la URL de pago (estado: ${data.status ?? "desconocido"}). Revisa que la clave API tenga permisos de pagos online.`,
+    );
+  }
+  return { id: data.id, checkoutUrl };
 }
 
 /**
@@ -88,8 +135,9 @@ export const sumupProvider: PaymentProvider = {
       currency: input.currency.toUpperCase(),
       merchant_code: env.sumupMerchantCode,
       description: input.description ?? `Pedido ${input.orderNumber}`,
-      return_url: `${env.storeUrl}/success?order=${encodeURIComponent(input.orderNumber)}`,
+      return_url: `${env.storeUrl}/api/webhooks/sumup`,
       redirect_url: `${env.storeUrl}/success?order=${encodeURIComponent(input.orderNumber)}`,
+      hosted_checkout: { enabled: true },
     };
 
     const res = await fetch("https://api.sumup.com/v0.1/checkouts", {
@@ -106,18 +154,13 @@ export const sumupProvider: PaymentProvider = {
       throw new Error(`Error al crear checkout de SumUp: ${text}`);
     }
 
-    const data = (await res.json()) as {
-      id: string;
-      checkout_reference: string;
-      amount: number;
-      currency: string;
-      status: string;
-      checkout_url?: string;
-    };
+    const data = (await res.json()) as SumupCheckout;
 
     const existing = await db.payment.findFirst({
       where: { orderId: input.orderId, status: { in: ["REQUIRES_PAYMENT", "FAILED"] } },
     });
+
+    const checkoutUrl = data.hosted_checkout_url ?? data.checkout_url ?? "";
 
     if (existing) {
       await db.payment.update({
@@ -127,7 +170,7 @@ export const sumupProvider: PaymentProvider = {
           status: "REQUIRES_PAYMENT",
           amountCents: input.amountCents,
           paymentIntentId: data.id,
-          clientSecret: data.checkout_url ?? null,
+          clientSecret: checkoutUrl || null,
         },
       });
     } else {
@@ -138,13 +181,15 @@ export const sumupProvider: PaymentProvider = {
           status: "REQUIRES_PAYMENT",
           amountCents: input.amountCents,
           paymentIntentId: data.id,
-          clientSecret: data.checkout_url ?? null,
+          clientSecret: checkoutUrl || null,
         },
       });
     }
 
+    if (!checkoutUrl) throw new Error("SumUp no devolvió la URL de pago (hosted_checkout_url)");
+
     return {
-      clientSecret: data.checkout_url ?? "",
+      clientSecret: checkoutUrl,
       publishableKey: "",
       paymentId: existing?.id ?? "",
     };
