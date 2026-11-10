@@ -5,7 +5,7 @@ import { forgotSchema } from "@/lib/validate";
 import { db } from "@/lib/db";
 import { sendEmail } from "@/lib/emails";
 import { resetPasswordEmail } from "@/lib/emails/templates";
-import { env } from "@/lib/env";
+import { resolveBaseUrl } from "@/lib/public-url";
 
 export const runtime = "nodejs";
 
@@ -26,7 +26,7 @@ export const POST = withApi(
           expiresAt: new Date(Date.now() + 60 * 60 * 1000),
         },
       });
-      const resetUrl = `${env.storeUrl}/account/reset-password?token=${token}`;
+      const resetUrl = `${resolveBaseUrl(request)}/account/reset-password?token=${token}`;
       await sendEmail({ to: user.email, subject: "Restablecer tu contraseña REBELYN", react: resetPasswordEmail(resetUrl) });
     }
 

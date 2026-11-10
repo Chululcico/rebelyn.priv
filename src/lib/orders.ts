@@ -7,6 +7,7 @@ import { quoteShipping } from "@/lib/shipping";
 import { consumeStock, StockError, validateStockForItems } from "@/lib/stock";
 import { sendEmail } from "@/lib/emails";
 import { orderPaidEmail } from "@/lib/emails/templates";
+import { getSettings } from "@/lib/settings";
 
 export type CheckoutInput = {
   email: string;
@@ -235,21 +236,7 @@ export async function createOrderFromCart(params: {
     await db.cart.update({ where: { id: params.cartId }, data: { discountCode: null } }).catch(() => undefined);
 
     // Email automático de confirmación (no bloquea el checkout si falla)
-    try {
-      const fullOrder = await db.order.findUnique({
-        where: { id: order.id },
-        include: { items: true },
-      });
-      if (fullOrder) {
-        await sendEmail({
-          to: fullOrder.email,
-          subject: `Pedido confirmado ${fullOrder.orderNumber} · REBELYN`,
-          react: orderPaidEmail(fullOrder),
-        });
-      }
-    } catch (e) {
-      console.error("[orders] Error enviando email de confirmación:", e);
-    }
+    await sendOrderConfirmation(order.id);
 
     return { orderId: order.id, orderNumber: order.orderNumber, totals };
   } catch (error) {
@@ -274,6 +261,29 @@ export async function cancelOrder(orderId: string, adminUserId?: string, reason 
 /** Convierte un valor a JSON plano (sin undefined) para guardarlo en campos Json de Prisma. */
 export function plainJson<T>(value: T): Prisma.InputJsonValue {
   return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
+}
+
+/**
+ * Envía al cliente el email de confirmación de pedido con el número y el
+ * agradecimiento. El asunto y el mensaje se editan en /admin/settings
+ * ("Email de pedido confirmado"); el desglose del pedido y la dirección de
+ * envío se añaden siempre automáticamente. No lanza nunca.
+ */
+async function sendOrderConfirmation(orderId: string): Promise<void> {
+  const fullOrder = await db.order.findUnique({ where: { id: orderId }, include: { items: true } });
+  if (!fullOrder) return;
+  try {
+    const { orderEmail } = await getSettings();
+    const subject = orderEmail.subject.split("{orderNumber}").join(fullOrder.orderNumber);
+    const sent = await sendEmail({
+      to: fullOrder.email,
+      subject,
+      react: orderPaidEmail(fullOrder, { message: orderEmail.message }),
+    });
+    if (!sent.ok) console.error(`[orders] Email de confirmación no enviado (${fullOrder.orderNumber}):`, sent.error);
+  } catch (e) {
+    console.error("[orders] Error enviando email de confirmación:", e);
+  }
 }
 
 /**
@@ -427,18 +437,7 @@ export async function finalizeDraftOrder(
     await db.cart.update({ where: { id: draft.cartId }, data: { discountCode: null } }).catch(() => undefined);
 
     // Email de confirmación (no bloquea el registro del pedido si falla).
-    try {
-      const fullOrder = await db.order.findUnique({ where: { id: order.id }, include: { items: true } });
-      if (fullOrder) {
-        await sendEmail({
-          to: fullOrder.email,
-          subject: `Pedido confirmado ${fullOrder.orderNumber} · REBELYN`,
-          react: orderPaidEmail(fullOrder),
-        });
-      }
-    } catch (e) {
-      console.error("[orders] Error enviando email de confirmación:", e);
-    }
+    await sendOrderConfirmation(order.id);
 
     return { orderId: order.id, orderNumber: order.orderNumber };
   } catch (error) {

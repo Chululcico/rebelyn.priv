@@ -29,6 +29,7 @@ export const PATCH = withApi(
       ["currency", input.currency],
       ["taxRatePercent", input.taxRatePercent],
       ["pricesIncludeTax", input.pricesIncludeTax],
+      ["orderEmail", input.orderEmail],
       ["social", input.social],
       ["shippingMethods", input.shippingMethods],
     ];

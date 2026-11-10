@@ -186,6 +186,10 @@ export const settingsSchema = z.object({
   currency: z.string().trim().length(3),
   taxRatePercent: z.number().min(0).max(100),
   pricesIncludeTax: z.boolean(),
+  orderEmail: z.object({
+    subject: z.string().trim().min(3).max(200),
+    message: z.string().trim().min(3).max(2000),
+  }),
   social: z.object({
     instagram: z.string().trim().max(300).optional(),
     tiktok: z.string().trim().max(300).optional(),

@@ -29,7 +29,10 @@ export async function sendEmail(params: { to: string; subject: string; react: Re
 
   try {
     const { error } = await resend.emails.send({ from: env.emailFrom, to: params.to, subject: params.subject, react: params.react });
-    if (error) return { ok: false, error: error.message };
+    if (error) {
+      console.error(`[email:error] ${params.subject}: ${error.message}`);
+      return { ok: false, error: error.message };
+    }
     return { ok: true };
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : "Error de envío" };

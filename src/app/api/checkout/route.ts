@@ -5,29 +5,14 @@ import { ensureCart } from "@/lib/cart";
 import { computeTotals, plainJson } from "@/lib/orders";
 import { validateStockForItems } from "@/lib/stock";
 import { getCurrentUser } from "@/lib/auth";
-import { env, sumupConfigured } from "@/lib/env";
+import { sumupConfigured } from "@/lib/env";
+import { resolveBaseUrl } from "@/lib/public-url";
 import { listShippingMethods } from "@/lib/shipping";
 import { db } from "@/lib/db";
 import { createSumupCheckout } from "@/lib/payments/sumup-provider";
 import { publicPaymentMethods } from "@/lib/payments";
 
 export const runtime = "nodejs";
-
-/**
- * URL pública de la tienda: usa la configurada (NEXT_PUBLIC_SITE_URL) si es
- * válida; si no, la deduce de la petición real (host de Vercel). Evita
- * redirigir a SumUp hacia localhost en producción.
- */
-function resolveBaseUrl(request: Request): string {
-  const configured = env.storeUrl.replace(/\/+$/, "");
-  if (configured.startsWith("http") && !configured.includes("localhost")) return configured;
-  const host = request.headers.get("x-forwarded-host") || request.headers.get("host");
-  if (host) {
-    const proto = request.headers.get("x-forwarded-proto") || (host.startsWith("localhost") ? "http" : "https");
-    return `${proto}://${host}`;
-  }
-  return configured;
-}
 
 /**
  * PAGO PRIMERO → PEDIDO DESPUÉS.

@@ -14,6 +14,7 @@ type Settings = {
   currency: string;
   taxRatePercent: number;
   pricesIncludeTax: boolean;
+  orderEmail: { subject: string; message: string };
   social: { instagram?: string; tiktok?: string; whatsapp?: string };
   shippingMethods: ShippingMethod[];
 };
@@ -123,6 +124,19 @@ export function SettingsManager() {
           >
             + Añadir método
           </button>
+        </div>
+
+        <h2 className="text-[1.5rem] uppercase tracking-[0.12em] mb-3">Email de pedido confirmado</h2>
+        <div className="border hairline bg-paper p-5 mb-6">
+          <label className="block mb-4"><span className="label">Asunto</span>
+            <input className="field" value={settings.orderEmail.subject} onChange={(e) => set("orderEmail", { ...settings.orderEmail, subject: e.target.value })} />
+          </label>
+          <label className="block"><span className="label">Mensaje para el cliente</span>
+            <textarea className="field" rows={5} value={settings.orderEmail.message} onChange={(e) => set("orderEmail", { ...settings.orderEmail, message: e.target.value })} />
+          </label>
+          <p className="text-[1.2rem] text-muted mt-3">
+            Usa {"{orderNumber}"} para el número de pedido y {"{nombre}"} para el nombre del cliente. El email añade automáticamente el desglose del pedido y la dirección de envío.
+          </p>
         </div>
 
         {error && <p className="text-[1.4rem] text-magenta mb-4" role="alert">{error}</p>}

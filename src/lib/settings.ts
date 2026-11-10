@@ -11,6 +11,14 @@ export type ShippingMethod = {
   active: boolean;
 };
 
+/** Email de confirmación de pedido (editable en /admin/settings). */
+export type OrderEmailSettings = {
+  /** Soporta el marcador {orderNumber}. */
+  subject: string;
+  /** Soporta los marcadores {orderNumber} y {nombre}; cada línea es un párrafo. */
+  message: string;
+};
+
 export type StoreSettings = {
   storeName: string;
   contactEmail: string;
@@ -22,6 +30,7 @@ export type StoreSettings = {
   taxRatePercent: number;
   pricesIncludeTax: boolean;
   shippingMethods: ShippingMethod[];
+  orderEmail: OrderEmailSettings;
   social: { instagram?: string; tiktok?: string; whatsapp?: string };
 };
 
@@ -53,6 +62,10 @@ export const DEFAULT_SETTINGS: StoreSettings = {
       active: true,
     },
   ],
+  orderEmail: {
+    subject: "Pedido confirmado {orderNumber} · REBELYN",
+    message: "Gracias por comprar en REBELYN. Hemos recibido tu pago correctamente y ya estamos preparando tu pedido.",
+  },
   social: {
     instagram: "https://www.instagram.com/rebelyn.off/",
     tiktok: "https://www.tiktok.com/@rebelyn.off",
@@ -70,6 +83,12 @@ export const getSettings = cache(async (): Promise<StoreSettings> => {
       const methods = row.value as ShippingMethod[];
       if (Array.isArray(methods)) {
         merged.shippingMethods = methods.filter((m) => m && typeof m.id === "string" && typeof m.priceCents === "number");
+      }
+    } else if (row.key === "orderEmail") {
+      // Validación mínima: asunto y mensaje deben ser texto.
+      const v = row.value as Partial<OrderEmailSettings> | null;
+      if (v && typeof v === "object" && typeof v.subject === "string" && typeof v.message === "string") {
+        merged.orderEmail = { subject: v.subject, message: v.message };
       }
     } else {
       merged[row.key] = row.value;

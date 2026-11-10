@@ -19,40 +19,48 @@ export async function POST(request: Request) {
     // ── Flujo actual: pago PRIMERO, pedido después ─────────────────────────────
     const draft = await db.checkoutDraft.findFirst({ where: { providerCheckoutId: checkoutId } });
     if (draft) {
-      const paid = status.includes("PAID") || status.includes("SUCCESS") || status.includes("COMPLET");
+      // El evento de SumUp (p. ej. CHECKOUT_STATUS_CHANGED) NO incluye el estado
+      // del pago: su documentación exige verificar SIEMPRE contra la API real.
+      const checkout = await fetchSumupCheckout(checkoutId);
+      const providerStatus = String(checkout?.status ?? "").toUpperCase();
 
-      if (!paid) {
-        // Fallido/cancelado: no se registra ningún pedido (el carrito sigue intacto).
+      if (!checkout) {
+        // Fallo temporal al consultar SumUp: devolver error para que SumUp
+        // reintente el webhook (reintenta a 1 min, 5 min, 20 min y 2 h).
+        console.error(`[sumup-webhook] No se pudo verificar el checkout ${checkoutId} (borrador ${draft.id})`);
+        return NextResponse.json({ ok: false }, { status: 500 });
+      }
+
+      if (providerStatus.includes("PAID")) {
+        // Verificación server-to-server: el estado REAL en SumUp manda.
+        const paidCents = Math.round(Number(checkout.amount) * 100);
+        if (paidCents !== draft.amountCents) {
+          await db.checkoutDraft
+            .update({
+              where: { id: draft.id },
+              data: { status: "FAILED", failureReason: `Importe pagado ${paidCents} céntimos ≠ esperado ${draft.amountCents}` },
+            })
+            .catch(() => undefined);
+          console.error(`[sumup-webhook] Importe no coincide en borrador ${draft.id}: pagado=${paidCents} esperado=${draft.amountCents}`);
+          return NextResponse.json({ ok: true });
+        }
+
+        const result = await finalizeDraftOrder(draft.id);
+        if ("error" in result) console.error("[sumup-webhook] Error finalizando borrador:", result.error);
+        return NextResponse.json({ ok: true });
+      }
+
+      if (providerStatus.includes("FAILED") || providerStatus.includes("EXPIRED") || providerStatus.includes("CANCEL")) {
+        // Pago fallido/cancelado: no se registra ningún pedido (el carrito sigue intacto).
         if (draft.status === "PENDING" || draft.status === "PROCESSING") {
           await db.checkoutDraft
-            .update({ where: { id: draft.id }, data: { status: "FAILED", failureReason: `Webhook SumUp: ${status || "estado desconocido"}` } })
+            .update({ where: { id: draft.id }, data: { status: "FAILED", failureReason: `SumUp: ${providerStatus}` } })
             .catch(() => undefined);
         }
         return NextResponse.json({ ok: true });
       }
 
-      // Verificación server-to-server: el estado REAL en SumUp manda,
-      // nunca el contenido del webhook.
-      const checkout = await fetchSumupCheckout(checkoutId);
-      const providerStatus = String(checkout?.status ?? "").toUpperCase();
-      if (!checkout || !providerStatus.includes("PAID")) {
-        return NextResponse.json({ ok: true }); // No confirmado: no crear pedido.
-      }
-
-      const paidCents = Math.round(Number(checkout.amount) * 100);
-      if (paidCents !== draft.amountCents) {
-        await db.checkoutDraft
-          .update({
-            where: { id: draft.id },
-            data: { status: "FAILED", failureReason: `Importe pagado ${paidCents} céntimos ≠ esperado ${draft.amountCents}` },
-          })
-          .catch(() => undefined);
-        console.error(`[sumup-webhook] Importe no coincide en borrador ${draft.id}: pagado=${paidCents} esperado=${draft.amountCents}`);
-        return NextResponse.json({ ok: true });
-      }
-
-      const result = await finalizeDraftOrder(draft.id);
-      if ("error" in result) console.error("[sumup-webhook] Error finalizando borrador:", result.error);
+      // Estado intermedio (p. ej. PENDING): no hacer nada; SumUp volverá a avisar.
       return NextResponse.json({ ok: true });
     }
 

@@ -94,11 +94,28 @@ function shippingAddress(order: Order) {
   );
 }
 
-export function orderPaidEmail(order: Order & { items?: { productName: string; size: string; qty: number; totalCents: number }[] }) {
+export function orderPaidEmail(
+  order: Order & { items?: { productName: string; size: string; qty: number; totalCents: number }[] },
+  opts?: { message?: string | null },
+) {
+  // Mensaje editable desde /admin/settings ("Email de pedido confirmado").
+  // Soporta {orderNumber} y {nombre}; cada línea se muestra como un párrafo.
+  const raw = opts?.message?.trim() || "Gracias por comprar en REBELYN. Hemos recibido tu pago correctamente y ya estamos preparando tu pedido.";
+  const firstName = (order.shipName || "").trim().split(/\s+/)[0] || "";
+  const text = raw.split("{orderNumber}").join(order.orderNumber).split("{nombre}").join(firstName);
+  const paragraphs = text
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
   return (
     <Shell>
       <h1 style={styles.h1}>Tu pedido {order.orderNumber} está confirmado</h1>
-      <p style={styles.p}>Gracias por comprar en REBELYN. Hemos recibido tu pago correctamente y ya estamos preparando tu pedido.</p>
+      {paragraphs.map((p, i) => (
+        <p key={i} style={styles.p}>
+          {p}
+        </p>
+      ))}
       {orderLines(order)}
       {shippingAddress(order)}
       <p style={styles.muted}>Recibirás otro email en cuanto salga el paquete, con el número de seguimiento.</p>
