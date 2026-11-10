@@ -382,6 +382,36 @@ model Refund {
   @@index([paymentId])
 }
 
+// ── Borrador de checkout (pago antes de registrar el pedido) ──────────────────
+// El pedido SOLO se crea cuando el proveedor (SumUp) confirma el pago.
+// El borrador guarda un snapshot del carrito, dirección y totales del momento
+// en que el cliente inicia el pago, para crear el pedido exacto que se pagó.
+
+model CheckoutDraft {
+  id                 String    @id @default(cuid())
+  cartId             String
+  userId             String?
+  email              String
+  input              Json // CheckoutInput: dirección, teléfono, nota...
+  lines              Json // snapshot de líneas (productos, cantidades, precios)
+  totals             Json // snapshot de totales (subtotal, envío, descuento, total)
+  shippingSelection  Json? // { serviceId, serviceCode, methodId }
+  discountCode       String?
+  provider           String    @default("sumup")
+  providerCheckoutId String?   @unique
+  amountCents        Int
+  currency           String    @default("EUR")
+  status             String    @default("PENDING") // PENDING, PROCESSING, PAID, FAILED
+  orderId            String?
+  failureReason      String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  paidAt             DateTime?
+
+  @@index([cartId])
+  @@index([status, createdAt])
+}
+
 // ── Descuentos ────────────────────────────────────────────────────────────────
 
 model Discount {

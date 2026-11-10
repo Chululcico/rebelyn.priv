@@ -291,6 +291,190 @@ export async function cancelOrder(orderId: string, adminUserId?: string, reason 
   });
 }
 
+/** Convierte un valor a JSON plano (sin undefined) para guardarlo en campos Json de Prisma. */
+export function plainJson<T>(value: T): Prisma.InputJsonValue {
+  return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
+}
+
+/**
+ * PAGO PRIMERO → PEDIDO DESPUÉS.
+ * Crea el pedido a partir de un CheckoutDraft cuya CARTA ya ha sido verificada
+ * en servidor contra SumUp (webhook o /api/orders/verify).
+ *
+ * Es idempotente: si dos procesos llegan a la vez (webhook + retorno del
+ * navegador), solo uno crea el pedido; el otro recibe el pedido existente.
+ */
+export async function finalizeDraftOrder(
+  draftId: string,
+): Promise<{ orderId: string; orderNumber: string } | { error: string }> {
+  // Reclamar el borrador: PENDING → PROCESSING. Solo un proceso lo consigue.
+  // (Si un intento anterior quedó colgado en PROCESSING > 2 min, se puede reclamar.)
+  const claim = await db.checkoutDraft.updateMany({
+    where: {
+      id: draftId,
+      OR: [
+        { status: "PENDING" },
+        { status: "PROCESSING", updatedAt: { lt: new Date(Date.now() - 2 * 60 * 1000) } },
+      ],
+    },
+    data: { status: "PROCESSING" },
+  });
+
+  const draft = await db.checkoutDraft.findUnique({ where: { id: draftId } });
+  if (!draft) return { error: "No encontramos tu pago. Contáctanos indicando el email de compra." };
+
+  if (claim.count === 0) {
+    // Otro proceso ya lo está finalizando (o ya finalizó).
+    if (draft.status === "PAID" && draft.orderId) {
+      const existing = await db.order.findUnique({ where: { id: draft.orderId }, select: { orderNumber: true } });
+      if (existing) return { orderId: draft.orderId, orderNumber: existing.orderNumber };
+    }
+    if (draft.status === "FAILED") {
+      return { error: draft.failureReason ?? "El pago no se completó." };
+    }
+    return { error: "Tu pago se está confirmando en este momento. Espera unos segundos y vuelve a intentarlo." };
+  }
+
+  const input = draft.input as unknown as CheckoutInput;
+  const lines = draft.lines as unknown as {
+    variantId: string;
+    qty: number;
+    unitPriceCents: number;
+    totalCents: number;
+    productName: string;
+    productSlug: string;
+    size: string;
+    colorName: string | null;
+    imageUrl: string | null;
+  }[];
+  const totals = draft.totals as unknown as OrderTotals;
+
+  try {
+    // Revalidar stock justo antes de registrar (el pago pudo tardar unos minutos).
+    const stockProblem = await validateStockForItems(lines);
+    if (stockProblem) {
+      await db.checkoutDraft
+        .update({ where: { id: draft.id }, data: { status: "FAILED", failureReason: stockProblem } })
+        .catch(() => undefined);
+      return { error: `${stockProblem} Hemos recibido tu pago: contáctanos en hola@rebelyn.net y lo resolveremos de inmediato.` };
+    }
+
+    const order = await db.$transaction(async (tx) => {
+      const created = await tx.order.create({
+        data: {
+          orderNumber: generateOrderNumber(),
+          userId: draft.userId,
+          email: draft.email,
+          phone: input.phone?.trim() || null,
+          status: "PAID",
+          paidAt: draft.paidAt ?? new Date(),
+          shipName: input.name,
+          shipLine1: input.line1,
+          shipLine2: input.line2 || null,
+          shipCity: input.city,
+          shipProvince: input.province,
+          shipPostalCode: input.postalCode,
+          shipCountry: input.country ?? "ES",
+          subtotalCents: totals.subtotalCents,
+          shippingCents: totals.shippingCents,
+          discountCents: totals.discountCents,
+          totalCents: totals.totalCents,
+          discountCode: totals.discountCode,
+          shippingMethod: totals.methodId,
+          customerNote: input.customerNote || null,
+          items: {
+            create: lines.map((line) => ({
+              variantId: line.variantId,
+              productName: line.productName,
+              productSlug: line.productSlug,
+              size: line.size,
+              colorName: line.colorName,
+              imageUrl: line.imageUrl,
+              unitPriceCents: line.unitPriceCents,
+              qty: line.qty,
+              totalCents: line.totalCents,
+            })),
+          },
+        },
+      });
+
+      await consumeStock(
+        tx,
+        lines.map((l) => ({ variantId: l.variantId, qty: l.qty })),
+        `Pedido ${created.orderNumber}`,
+      );
+
+      if (totals.discountCode) {
+        const discount = await tx.discount.findUnique({ where: { code: totals.discountCode } });
+        if (discount) {
+          await tx.discount.update({ where: { id: discount.id }, data: { usedCount: { increment: 1 } } });
+          await tx.discountUsage.create({
+            data: {
+              discountId: discount.id,
+              orderId: created.id,
+              userId: draft.userId,
+              email: draft.email,
+              amountCents: totals.discountCents,
+            },
+          });
+        }
+      }
+
+      await tx.payment.create({
+        data: {
+          orderId: created.id,
+          provider: draft.provider,
+          status: "SUCCEEDED",
+          amountCents: draft.amountCents,
+          currency: draft.currency,
+          paymentIntentId: draft.providerCheckoutId,
+          method: "card",
+        },
+      });
+
+      await tx.checkoutDraft.update({
+        where: { id: draft.id },
+        data: { status: "PAID", orderId: created.id, paidAt: new Date() },
+      });
+
+      return created;
+    });
+
+    // Vaciar del carrito los artículos comprados (best-effort, tras commit).
+    await db.cartItem
+      .deleteMany({ where: { cartId: draft.cartId, variantId: { in: lines.map((l) => l.variantId) } } })
+      .catch(() => undefined);
+    await db.cart.update({ where: { id: draft.cartId }, data: { discountCode: null } }).catch(() => undefined);
+
+    // Email de confirmación (no bloquea el registro del pedido si falla).
+    try {
+      const fullOrder = await db.order.findUnique({ where: { id: order.id }, include: { items: true } });
+      if (fullOrder) {
+        await sendEmail({
+          to: fullOrder.email,
+          subject: `Pedido confirmado ${fullOrder.orderNumber} · REBELYN`,
+          react: orderPaidEmail(fullOrder),
+        });
+      }
+    } catch (e) {
+      console.error("[orders] Error enviando email de confirmación:", e);
+    }
+
+    return { orderId: order.id, orderNumber: order.orderNumber };
+  } catch (error) {
+    if (error instanceof StockError) {
+      await db.checkoutDraft
+        .update({ where: { id: draft.id }, data: { status: "FAILED", failureReason: error.message } })
+        .catch(() => undefined);
+      return { error: `${error.message} Hemos recibido tu pago: contáctanos en hola@rebelyn.net y lo resolveremos de inmediato.` };
+    }
+    // Error transitorio: devolver el borrador a PENDING para poder reintentar.
+    await db.checkoutDraft.update({ where: { id: draft.id }, data: { status: "PENDING" } }).catch(() => undefined);
+    console.error("[orders] Error finalizando borrador de checkout:", error);
+    return { error: "No se pudo registrar el pedido. Inténtalo de nuevo en unos segundos." };
+  }
+}
+
 async function restore(
   tx: Prisma.TransactionClient,
   items: { variantId: string | null; qty: number; productName: string }[],

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { formatMoney } from "@/lib/money";
 import { useCart } from "./cart-context";
+import { PaymentLogo, SecurePaymentBadge } from "./payment-logos";
 
 type LegacyMethod = { id: string; name: string; priceCents: number; freeOverCents: number | null; estimatedDays: string };
 type QuoteService = {
@@ -18,6 +19,17 @@ type QuoteService = {
   source?: string;
   freeApplied?: boolean;
 };
+
+type PaymentMethodDto = { id: string; label: string; description: string; logos: string[] };
+type TotalsDto = {
+  subtotalCents: number;
+  shippingCents: number;
+  discountCents: number;
+  totalCents: number;
+  discountCode: string | null;
+  methodId: string;
+};
+type PayData = { draftId: string; checkoutUrl: string; methods: PaymentMethodDto[]; totals: TotalsDto };
 
 type Props = { methods: LegacyMethod[] };
 
@@ -34,12 +46,17 @@ const EMPTY = {
 };
 
 export function CheckoutClient({ methods }: Props) {
-  const { lines, subtotalCents, discount, refresh } = useCart();
+  const { lines, subtotalCents, discount } = useCart();
   const [shipping, setShipping] = useState(EMPTY);
   const [note, setNote] = useState("");
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // Paso 2: pago (métodos + redirección a la pasarela segura)
+  const [step, setStep] = useState<"data" | "pay">("data");
+  const [pay, setPay] = useState<PayData | null>(null);
+  const [selectedMethodId, setSelectedMethodId] = useState("");
 
   const [services, setServices] = useState<QuoteService[]>([]);
   const [selectedServiceId, setSelectedServiceId] = useState("");
@@ -126,7 +143,14 @@ export function CheckoutClient({ methods }: Props) {
   const discountCents = discount?.valid ? discount.discountCents : 0;
   const estimatedTotal = Math.max(0, subtotalCents - discountCents) + shippingCents;
 
-  if (lines.length === 0) {
+  // En el paso de pago se muestran los totales REALES calculados en servidor.
+  const shownSubtotal = step === "pay" && pay ? pay.totals.subtotalCents : subtotalCents;
+  const shownDiscount = step === "pay" && pay ? pay.totals.discountCents : discountCents;
+  const shownDiscountCode = step === "pay" && pay ? pay.totals.discountCode : discount?.valid ? discount.code : null;
+  const shownShipping = step === "pay" && pay ? pay.totals.shippingCents : shippingCents;
+  const shownTotal = step === "pay" && pay ? pay.totals.totalCents : estimatedTotal;
+
+  if (lines.length === 0 && !(step === "pay" && pay)) {
     return (
       <section className="page-width py-24 text-center">
         <h1 className="title-section">Tu carrito está vacío</h1>
@@ -135,7 +159,12 @@ export function CheckoutClient({ methods }: Props) {
     );
   }
 
-  async function createOrder(event: React.FormEvent) {
+  /**
+   * Paso 1 → valida los datos y prepara el pago.
+   * IMPORTANTE: el pedido NO se registra aquí; solo se guarda un borrador
+   * y se crea el pago en SumUp. El pedido se crea cuando el pago se confirma.
+   */
+  async function continueToPayment(event: React.FormEvent) {
     event.preventDefault();
     setError(null);
     if (!activeService?.id) {
@@ -158,9 +187,8 @@ export function CheckoutClient({ methods }: Props) {
         }),
       });
       const data = await res.json();
-      if (!res.ok) {
-        setError(data.error ?? "No hemos podido crear el pedido.");
-        if (data.orderNumber) setError(`${data.error ?? "Pago no disponible."} Pedido ${data.orderNumber}.`);
+      if (!res.ok || !data?.checkoutUrl) {
+        setError(data.error ?? "No hemos podido preparar el pago.");
         // Refrescar cotización por si cambió algo
         if (canQuote) {
           try {
@@ -173,17 +201,22 @@ export function CheckoutClient({ methods }: Props) {
         }
         return;
       }
-      await refresh();
-      if (data.checkoutUrl) {
-        window.location.href = data.checkoutUrl;
-        return;
-      }
-      window.location.href = `/success?order=${encodeURIComponent(data.orderNumber)}`;
+      setPay({ draftId: data.draftId, checkoutUrl: data.checkoutUrl, methods: data.methods || [], totals: data.totals });
+      setSelectedMethodId(data.methods?.[0]?.id ?? "");
+      setStep("pay");
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } catch {
       setError("Error de conexión. Inténtalo de nuevo.");
     } finally {
       setSubmitting(false);
     }
+  }
+
+  /** Paso 2 → el cliente elige método y va a la pasarela segura de SumUp. */
+  function goToPaymentGateway() {
+    if (!pay?.checkoutUrl) return;
+    setSubmitting(true);
+    window.location.href = pay.checkoutUrl;
   }
 
   return (
@@ -192,94 +225,153 @@ export function CheckoutClient({ methods }: Props) {
 
       <div className="grid gap-10 lg:grid-cols-[1fr_38rem]">
         <div>
-          <form onSubmit={createOrder}>
-            <h2 className="text-[1.6rem] uppercase tracking-[0.14em] mb-4">Contacto y envío</h2>
+          {step === "pay" && pay ? (
+            <div>
+              {/* Pasos */}
+              <ol className="flex items-center gap-3 text-[1.2rem] uppercase tracking-[0.14em] text-muted mb-6" aria-label="Pasos del checkout">
+                <li className="flex items-center gap-2"><span className="inline-flex items-center justify-center w-6 h-6 rounded-full border hairline text-[1rem]">✓</span> Datos y envío</li>
+                <span aria-hidden="true">—</span>
+                <li className="flex items-center gap-2 text-ink"><span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-ink text-paper text-[1rem]">2</span> Pago</li>
+              </ol>
 
-            <div className="grid gap-0 md:grid-cols-2 md:gap-x-4">
-              <label className="block mb-4 md:col-span-2">
-                <span className="label">Nombre y apellidos</span>
-                <input className="field" required minLength={2} value={shipping.name} onChange={(e) => setShipping((s) => ({ ...s, name: e.target.value }))} autoComplete="name" />
-              </label>
-              <label className="block mb-4">
-                <span className="label">Email</span>
-                <input className="field" type="email" required value={shipping.email} onChange={(e) => setShipping((s) => ({ ...s, email: e.target.value }))} autoComplete="email" />
-              </label>
-              <label className="block mb-4">
-                <span className="label">Teléfono</span>
-                <input className="field" type="tel" required minLength={7} value={shipping.phone} onChange={(e) => setShipping((s) => ({ ...s, phone: e.target.value }))} autoComplete="tel" inputMode="tel" />
-              </label>
-              <label className="block mb-4 md:col-span-2">
-                <span className="label">Dirección</span>
-                <input className="field" required minLength={3} value={shipping.line1} onChange={(e) => setShipping((s) => ({ ...s, line1: e.target.value }))} autoComplete="street-address" />
-              </label>
-              <label className="block mb-4">
-                <span className="label">Código postal</span>
-                <input className="field" required pattern="[0-9]{5}" value={shipping.postalCode} onChange={(e) => setShipping((s) => ({ ...s, postalCode: e.target.value.replace(/\D/g, "").slice(0, 5) }))} autoComplete="postal-code" inputMode="numeric" />
-              </label>
-              <label className="block mb-4">
-                <span className="label">Ciudad</span>
-                <input className="field" required value={shipping.city} onChange={(e) => setShipping((s) => ({ ...s, city: e.target.value }))} autoComplete="address-level2" />
-              </label>
-              <label className="block mb-4">
-                <span className="label">Provincia</span>
-                <input className="field" required value={shipping.province} onChange={(e) => setShipping((s) => ({ ...s, province: e.target.value }))} autoComplete="address-level1" />
-              </label>
-              <label className="block mb-4">
-                <span className="label">País</span>
-                <input className="field" required value={shipping.country} onChange={(e) => setShipping((s) => ({ ...s, country: e.target.value.toUpperCase().slice(0, 2) }))} autoComplete="country" maxLength={2} />
-              </label>
-            </div>
+              <button type="button" className="underline text-[1.3rem] mb-6" onClick={() => { setStep("data"); setError(null); }}>
+                ← Volver a mis datos
+              </button>
 
-            <h2 className="text-[1.6rem] uppercase tracking-[0.14em] mt-6 mb-2">Método de envío</h2>
-            <p className="text-[1.2rem] text-muted mb-3">Origen: Elda (Alicante). Las tarifas se calculan en servidor según destino, peso/dimensiones y configuración.</p>
-            {quoteLoading && <p className="text-[1.3rem] text-muted mb-3">Calculando tarifas de envío…</p>}
-            {quoteError && <p className="text-[1.3rem] text-magenta mb-3" role="status">{quoteError}</p>}
-            {!quoteLoading && services.length > 0 && (
-              <div className="flex flex-col gap-2 mb-6">
-                {services.map((m) => (
-                  <label key={m.id} className="flex items-center justify-between border hairline p-4 cursor-pointer has-[:checked]:border-ink">
-                    <span className="flex items-center gap-3">
-                      <input type="radio" name="shipping" value={m.id} checked={selectedServiceId === m.id} onChange={() => setSelectedServiceId(m.id)} required />
-                      <span>
-                        <span className="text-[1.4rem]">{m.serviceName}</span>
-                        <span className="block text-[1.2rem] text-muted">
-                          {[m.estimatedDays, m.deliveryType ? `Entrega: ${m.deliveryType.toLowerCase()}` : null, m.zone ? `Zona: ${m.zone}` : null].filter(Boolean).join(" · ")}
+              <h2 className="text-[1.6rem] uppercase tracking-[0.14em] mb-2">Método de pago</h2>
+              <p className="text-[1.3rem] text-muted mb-5">
+                Elige cómo quieres pagar <strong>{formatMoney(pay.totals.totalCents)}</strong>. El pedido solo se registra si el pago se confirma.
+              </p>
+
+              <ul className="flex flex-col gap-3 mb-6">
+                {pay.methods.map((m) => (
+                  <li key={m.id}>
+                    <label className="flex items-start justify-between gap-4 border hairline p-4 cursor-pointer has-[:checked]:border-ink">
+                      <span className="flex items-start gap-3">
+                        <input type="radio" name="payment" value={m.id} checked={selectedMethodId === m.id} onChange={() => setSelectedMethodId(m.id)} className="mt-2" />
+                        <span>
+                          <span className="text-[1.5rem]">{m.label}</span>
+                          <span className="block text-[1.2rem] text-muted mt-1">{m.description}</span>
+                          {m.logos.length > 0 && (
+                            <span className="mt-3 flex flex-wrap gap-2">
+                              {m.logos.map((logo) => (
+                                <PaymentLogo key={logo} id={logo} />
+                              ))}
+                            </span>
+                          )}
                         </span>
                       </span>
-                    </span>
-                    <span className="text-[1.4rem]">{m.priceCents === 0 ? "Gratis" : formatMoney(m.priceCents)}</span>
-                  </label>
+                    </label>
+                  </li>
                 ))}
+                {pay.methods.length === 0 && (
+                  <li className="text-[1.3rem] text-magenta">No hay métodos de pago disponibles ahora mismo. Contáctanos en hola@rebelyn.net.</li>
+                )}
+              </ul>
+
+              {error && <p className="text-[1.35rem] text-magenta mb-4" role="alert">{error}</p>}
+
+              <button className="button w-full" type="button" disabled={submitting || !selectedMethodId} onClick={goToPaymentGateway}>
+                {submitting ? "Redirigiendo al pago…" : `Pagar ${formatMoney(pay.totals.totalCents)}`}
+              </button>
+
+              <div className="flex justify-center mt-4">
+                <SecurePaymentBadge />
               </div>
-            )}
-            {!quoteLoading && services.length === 0 && !quoteError && (
-              <p className="text-[1.3rem] text-muted mb-6">Introduce un código postal válido para ver las opciones de envío.</p>
-            )}
+              <p className="text-[1.2rem] text-muted mt-3 text-center">
+                Serás redirigido a la pasarela segura de SumUp para completar los datos de tu tarjeta. Tus datos de pago nunca pasan por nuestra tienda.
+              </p>
+            </div>
+          ) : (
+            <form onSubmit={continueToPayment}>
+              <h2 className="text-[1.6rem] uppercase tracking-[0.14em] mb-4">Contacto y envío</h2>
 
-            <label className="block mb-4">
-              <span className="label">Notas del pedido (opcional)</span>
-              <input className="field" value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} />
-            </label>
+              <div className="grid gap-0 md:grid-cols-2 md:gap-x-4">
+                <label className="block mb-4 md:col-span-2">
+                  <span className="label">Nombre y apellidos</span>
+                  <input className="field" required minLength={2} value={shipping.name} onChange={(e) => setShipping((s) => ({ ...s, name: e.target.value }))} autoComplete="name" />
+                </label>
+                <label className="block mb-4">
+                  <span className="label">Email</span>
+                  <input className="field" type="email" required value={shipping.email} onChange={(e) => setShipping((s) => ({ ...s, email: e.target.value }))} autoComplete="email" />
+                </label>
+                <label className="block mb-4">
+                  <span className="label">Teléfono</span>
+                  <input className="field" type="tel" required minLength={7} value={shipping.phone} onChange={(e) => setShipping((s) => ({ ...s, phone: e.target.value }))} autoComplete="tel" inputMode="tel" />
+                </label>
+                <label className="block mb-4 md:col-span-2">
+                  <span className="label">Dirección</span>
+                  <input className="field" required minLength={3} value={shipping.line1} onChange={(e) => setShipping((s) => ({ ...s, line1: e.target.value }))} autoComplete="street-address" />
+                </label>
+                <label className="block mb-4">
+                  <span className="label">Código postal</span>
+                  <input className="field" required pattern="[0-9]{5}" value={shipping.postalCode} onChange={(e) => setShipping((s) => ({ ...s, postalCode: e.target.value.replace(/\D/g, "").slice(0, 5) }))} autoComplete="postal-code" inputMode="numeric" />
+                </label>
+                <label className="block mb-4">
+                  <span className="label">Ciudad</span>
+                  <input className="field" required value={shipping.city} onChange={(e) => setShipping((s) => ({ ...s, city: e.target.value }))} autoComplete="address-level2" />
+                </label>
+                <label className="block mb-4">
+                  <span className="label">Provincia</span>
+                  <input className="field" required value={shipping.province} onChange={(e) => setShipping((s) => ({ ...s, province: e.target.value }))} autoComplete="address-level1" />
+                </label>
+                <label className="block mb-4">
+                  <span className="label">País</span>
+                  <input className="field" required value={shipping.country} onChange={(e) => setShipping((s) => ({ ...s, country: e.target.value.toUpperCase().slice(0, 2) }))} autoComplete="country" maxLength={2} />
+                </label>
+              </div>
 
-            <label className="flex items-start gap-3 text-[1.3rem] mb-6">
-              <input type="checkbox" required checked={acceptTerms} onChange={(e) => setAcceptTerms(e.target.checked)} className="mt-1 w-5 h-5" />
-              <span>
-                He leído y acepto las{" "}
-                <Link href="/terms" target="_blank" className="underline">condiciones generales de compra</Link>, la{" "}
-                <Link href="/privacy" target="_blank" className="underline">política de privacidad</Link> y la{" "}
-                <Link href="/returns" target="_blank" className="underline">política de devoluciones</Link>.
-              </span>
-            </label>
+              <h2 className="text-[1.6rem] uppercase tracking-[0.14em] mt-6 mb-2">Método de envío</h2>
+              <p className="text-[1.2rem] text-muted mb-3">Origen: Elda (Alicante). Las tarifas se calculan en servidor según destino, peso/dimensiones y configuración.</p>
+              {quoteLoading && <p className="text-[1.3rem] text-muted mb-3">Calculando tarifas de envío…</p>}
+              {quoteError && <p className="text-[1.3rem] text-magenta mb-3" role="status">{quoteError}</p>}
+              {!quoteLoading && services.length > 0 && (
+                <div className="flex flex-col gap-2 mb-6">
+                  {services.map((m) => (
+                    <label key={m.id} className="flex items-center justify-between border hairline p-4 cursor-pointer has-[:checked]:border-ink">
+                      <span className="flex items-center gap-3">
+                        <input type="radio" name="shipping" value={m.id} checked={selectedServiceId === m.id} onChange={() => setSelectedServiceId(m.id)} required />
+                        <span>
+                          <span className="text-[1.4rem]">{m.serviceName}</span>
+                          <span className="block text-[1.2rem] text-muted">
+                            {[m.estimatedDays, m.deliveryType ? `Entrega: ${m.deliveryType.toLowerCase()}` : null, m.zone ? `Zona: ${m.zone}` : null].filter(Boolean).join(" · ")}
+                          </span>
+                        </span>
+                      </span>
+                      <span className="text-[1.4rem]">{m.priceCents === 0 ? "Gratis" : formatMoney(m.priceCents)}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+              {!quoteLoading && services.length === 0 && !quoteError && (
+                <p className="text-[1.3rem] text-muted mb-6">Introduce un código postal válido para ver las opciones de envío.</p>
+              )}
 
-            {error && <p className="text-[1.35rem] text-magenta mb-4" role="alert">{error}</p>}
+              <label className="block mb-4">
+                <span className="label">Notas del pedido (opcional)</span>
+                <input className="field" value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} />
+              </label>
 
-            <button className="button w-full" type="submit" disabled={submitting || !acceptTerms || !activeService}>
-              {submitting ? "Redirigiendo al pago…" : `Pagar con SumUp · ${formatMoney(estimatedTotal)}`}
-            </button>
-            <p className="text-[1.2rem] text-muted mt-3 text-center">
-              El importe del envío se valida en servidor al confirmar el pedido. Serás redirigido a la pasarela segura de SumUp.
-            </p>
-          </form>
+              <label className="flex items-start gap-3 text-[1.3rem] mb-6">
+                <input type="checkbox" required checked={acceptTerms} onChange={(e) => setAcceptTerms(e.target.checked)} className="mt-1 w-5 h-5" />
+                <span>
+                  He leído y acepto las{" "}
+                  <Link href="/terms" target="_blank" className="underline">condiciones generales de compra</Link>, la{" "}
+                  <Link href="/privacy" target="_blank" className="underline">política de privacidad</Link> y la{" "}
+                  <Link href="/returns" target="_blank" className="underline">política de devoluciones</Link>.
+                </span>
+              </label>
+
+              {error && <p className="text-[1.35rem] text-magenta mb-4" role="alert">{error}</p>}
+
+              <button className="button w-full" type="submit" disabled={submitting || !acceptTerms || !activeService}>
+                {submitting ? "Preparando el pago…" : `Continuar al pago · ${formatMoney(estimatedTotal)}`}
+              </button>
+              <p className="text-[1.2rem] text-muted mt-3 text-center">
+                El importe del envío se valida en servidor. En el siguiente paso elegirás el método de pago.
+              </p>
+            </form>
+          )}
         </div>
 
         <aside className="border hairline p-6 h-fit lg:sticky lg:top-24">
@@ -295,15 +387,15 @@ export function CheckoutClient({ methods }: Props) {
             ))}
           </ul>
           <dl className="flex flex-col gap-2 text-[1.35rem] border-t hairline pt-4">
-            <div className="flex justify-between"><dt>Subtotal</dt><dd>{formatMoney(subtotalCents)}</dd></div>
-            {discount?.valid && (
-              <div className="flex justify-between text-magenta"><dt>Descuento {discount.code}</dt><dd>−{formatMoney(discount.discountCents)}</dd></div>
+            <div className="flex justify-between"><dt>Subtotal</dt><dd>{formatMoney(shownSubtotal)}</dd></div>
+            {shownDiscountCode && (
+              <div className="flex justify-between text-magenta"><dt>Descuento {shownDiscountCode}</dt><dd>−{formatMoney(shownDiscount)}</dd></div>
             )}
-            <div className="flex justify-between"><dt>Envío</dt><dd>{shippingCents === 0 ? "Gratis" : formatMoney(shippingCents)}</dd></div>
+            <div className="flex justify-between"><dt>Envío</dt><dd>{shownShipping === 0 ? "Gratis" : formatMoney(shownShipping)}</dd></div>
           </dl>
           <div className="flex justify-between border-t hairline mt-3 pt-3 text-[1.6rem] uppercase tracking-[0.1em]">
             <span>Total</span>
-            <span>{formatMoney(estimatedTotal)}</span>
+            <span>{formatMoney(shownTotal)}</span>
           </div>
           <p className="text-[1.2rem] text-muted mt-3">Impuestos incluidos. Total final confirmado en servidor.</p>
         </aside>
