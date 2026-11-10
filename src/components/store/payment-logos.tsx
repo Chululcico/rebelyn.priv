@@ -4,7 +4,7 @@
  * para identificar el método en el checkout.
  */
 
-export type PaymentLogoId = "visa" | "mastercard" | "maestro" | "amex" | "card";
+export type PaymentLogoId = "visa" | "mastercard" | "maestro" | "amex" | "applepay" | "googlepay" | "card";
 
 export function PaymentLogo({ id, className = "" }: { id: string; className?: string }) {
   const common = {
@@ -51,6 +51,35 @@ export function PaymentLogo({ id, className = "" }: { id: string; className?: st
           <rect x="0" y="0" width="48" height="30" rx="4" fill="#016FD0" />
           <rect x="4" y="9" width="40" height="12" rx="1.5" fill="#ffffff" />
           <text x="24" y="18.5" textAnchor="middle" fontFamily="Arial, Helvetica, sans-serif" fontWeight="700" fontSize="8" fill="#016FD0" letterSpacing="0.5">AMEX</text>
+        </svg>
+      );
+    case "applepay":
+      return (
+        <svg {...common}>
+          <title>Apple Pay</title>
+          <rect x="0" y="0" width="48" height="30" rx="4" fill="#000000" />
+          {/* Manzana simplificada: dos círculos solapados + muesca + hoja */}
+          <circle cx="11.2" cy="16.4" r="4.9" fill="#ffffff" />
+          <circle cx="16" cy="16.4" r="4.9" fill="#ffffff" />
+          <circle cx="13.6" cy="12.1" r="1.3" fill="#000000" />
+          <path d="M15.6 7.6c.6-1.4 1.9-2.3 3-2.4-.1 1.3-1.2 2.5-2.6 2.6-.3 0-.5-.1-.4-.2z" fill="#ffffff" />
+          <text x="33.5" y="19.8" textAnchor="middle" fontFamily="Arial, Helvetica, sans-serif" fontWeight="600" fontSize="11" fill="#ffffff">Pay</text>
+        </svg>
+      );
+    case "googlepay":
+      return (
+        <svg {...common}>
+          <title>Google Pay</title>
+          <rect x="0" y="0" width="48" height="30" rx="4" fill="#ffffff" stroke="#dfe1e5" strokeWidth="1" />
+          {/* G de Google simplificada en 4 colores + barra horizontal */}
+          <g fill="none" strokeWidth="2.7" strokeLinecap="round">
+            <path d="M13 6.8A6.3 6.3 0 0 0 6.7 13.1" stroke="#EA4335" />
+            <path d="M6.7 13.1A6.3 6.3 0 0 0 13 19.4" stroke="#FBBC05" />
+            <path d="M13 19.4A6.3 6.3 0 0 0 19.3 13.1" stroke="#34A853" />
+            <path d="M19.3 13.1A6.3 6.3 0 0 0 13 6.8" stroke="#4285F4" />
+            <path d="M14.5 13.1H19.3" stroke="#4285F4" />
+          </g>
+          <text x="34" y="17.2" textAnchor="middle" fontFamily="Arial, Helvetica, sans-serif" fontWeight="600" fontSize="10" fill="#3c4043">Pay</text>
         </svg>
       );
     default:

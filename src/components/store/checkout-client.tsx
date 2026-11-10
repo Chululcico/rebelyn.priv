@@ -51,7 +51,6 @@ export function CheckoutClient({ methods }: Props) {
   // Paso 2: pago (métodos + redirección a la pasarela segura)
   const [step, setStep] = useState<"data" | "pay">("data");
   const [pay, setPay] = useState<PayData | null>(null);
-  const [selectedPaymentId, setSelectedPaymentId] = useState("");
 
   // Precio FIJO del método elegido (gratis si se supera el umbral del método).
   const selectedMethod = useMemo(
@@ -70,6 +69,19 @@ export function CheckoutClient({ methods }: Props) {
   const shownDiscountCode = step === "pay" && pay ? pay.totals.discountCode : discount?.valid ? discount.code : null;
   const shownShipping = step === "pay" && pay ? pay.totals.shippingCents : shippingCents;
   const shownTotal = step === "pay" && pay ? pay.totals.totalCents : estimatedTotal;
+
+  // Métodos de pago visibles: Apple Pay solo si el dispositivo lo soporta,
+  // Google Pay se oculta en Safari (no está disponible ahí).
+  const visibleMethods = useMemo(() => {
+    if (!pay) return [];
+    const canApplePay = typeof window !== "undefined" && "ApplePaySession" in window;
+    const isSafari =
+      typeof window !== "undefined" &&
+      /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    return pay.methods.filter((m) =>
+      m.id === "applepay" ? canApplePay : m.id === "googlepay" ? !isSafari : true,
+    );
+  }, [pay]);
 
   if (lines.length === 0 && !(step === "pay" && pay)) {
     return (
@@ -111,7 +123,6 @@ export function CheckoutClient({ methods }: Props) {
         return;
       }
       setPay({ draftId: data.draftId, checkoutUrl: data.checkoutUrl, methods: data.methods || [], totals: data.totals });
-      setSelectedPaymentId(data.methods?.[0]?.id ?? "");
       setStep("pay");
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch {
@@ -153,42 +164,36 @@ export function CheckoutClient({ methods }: Props) {
               </p>
 
               <ul className="flex flex-col gap-3 mb-6">
-                {pay.methods.map((m) => (
+                {visibleMethods.map((m) => (
                   <li key={m.id}>
-                    <label className="flex items-start justify-between gap-4 border hairline p-4 cursor-pointer has-[:checked]:border-ink">
-                      <span className="flex items-start gap-3">
-                        <input type="radio" name="payment" value={m.id} checked={selectedPaymentId === m.id} onChange={() => setSelectedPaymentId(m.id)} className="mt-2" />
-                        <span>
-                          <span className="text-[1.5rem]">{m.label}</span>
-                          <span className="block text-[1.2rem] text-muted mt-1">{m.description}</span>
-                          {m.logos.length > 0 && (
-                            <span className="mt-3 flex flex-wrap gap-2">
-                              {m.logos.map((logo) => (
-                                <PaymentLogo key={logo} id={logo} />
-                              ))}
-                            </span>
-                          )}
-                        </span>
+                    <button
+                      type="button"
+                      className="w-full text-left border hairline p-4 cursor-pointer flex items-center justify-between gap-4 hover:border-ink disabled:opacity-50"
+                      disabled={submitting}
+                      onClick={goToPaymentGateway}
+                    >
+                      <span>
+                        <span className="text-[1.5rem]">{m.label}</span>
+                        <span className="block text-[1.2rem] text-muted mt-1">{m.description}</span>
                       </span>
-                    </label>
+                      {m.logos[0] && <PaymentLogo id={m.logos[0]} className="shrink-0" />}
+                    </button>
                   </li>
                 ))}
-                {pay.methods.length === 0 && (
+                {visibleMethods.length === 0 && (
                   <li className="text-[1.3rem] text-magenta">No hay métodos de pago disponibles ahora mismo. Contáctanos en hola@rebelyn.net.</li>
                 )}
               </ul>
 
               {error && <p className="text-[1.35rem] text-magenta mb-4" role="alert">{error}</p>}
 
-              <button className="button w-full" type="button" disabled={submitting || !selectedPaymentId} onClick={goToPaymentGateway}>
-                {submitting ? "Redirigiendo al pago…" : `Pagar ${formatMoney(pay.totals.totalCents)}`}
-              </button>
+              {submitting && <p className="text-[1.3rem] text-muted mb-4">Redirigiendo al pago…</p>}
 
-              <div className="flex justify-center mt-4">
+              <div className="flex justify-center">
                 <SecurePaymentBadge />
               </div>
               <p className="text-[1.2rem] text-muted mt-3 text-center">
-                Serás redirigido a la pasarela segura de SumUp para completar los datos de tu tarjeta. Tus datos de pago nunca pasan por nuestra tienda.
+                Pulsa tu método de pago y serás redirigido a la pasarela segura de SumUp. Tus datos de pago nunca pasan por nuestra tienda.
               </p>
             </div>
           ) : (
