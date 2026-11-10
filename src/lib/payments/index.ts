@@ -60,13 +60,13 @@ export function publicPaymentMethods(): PublicPaymentMethod[] {
       {
         id: "applepay",
         label: "Apple Pay",
-        description: "Pago al instante con Face ID o Touch ID (iPhone, iPad o Mac).",
+        description: "Pago al instante con Face ID o Touch ID (requiere iPhone, iPad o Mac).",
         logos: ["applepay"],
       },
       {
         id: "googlepay",
         label: "Google Pay",
-        description: "Pago al instante con la tarjeta guardada en tu cuenta de Google.",
+        description: "Pago al instante con la tarjeta guardada en tu cuenta de Google (requiere Android o Chrome).",
         logos: ["googlepay"],
       },
     );

@@ -70,18 +70,10 @@ export function CheckoutClient({ methods }: Props) {
   const shownShipping = step === "pay" && pay ? pay.totals.shippingCents : shippingCents;
   const shownTotal = step === "pay" && pay ? pay.totals.totalCents : estimatedTotal;
 
-  // Métodos de pago visibles: Apple Pay solo si el dispositivo lo soporta,
-  // Google Pay se oculta en Safari (no está disponible ahí).
-  const visibleMethods = useMemo(() => {
-    if (!pay) return [];
-    const canApplePay = typeof window !== "undefined" && "ApplePaySession" in window;
-    const isSafari =
-      typeof window !== "undefined" &&
-      /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-    return pay.methods.filter((m) =>
-      m.id === "applepay" ? canApplePay : m.id === "googlepay" ? !isSafari : true,
-    );
-  }, [pay]);
+  // Métodos de pago visibles en el paso de pago. Se muestran todos:
+  // la página segura de SumUp ofrecerá automáticamente cada uno según
+  // el dispositivo del cliente (Apple Pay en iPhone/iPad/Mac, etc.).
+  const visibleMethods = pay?.methods ?? [];
 
   if (lines.length === 0 && !(step === "pay" && pay)) {
     return (
