@@ -72,6 +72,21 @@ export function OrderDetailClient({ id }: { id: string }) {
     }
   }
 
+  async function resendEmail() {
+    if (!order) return;
+    setSaving(true);
+    setMessage(null);
+    setError(null);
+    try {
+      const data = await api<{ to: string }>(`/api/admin/orders/${order.id}/resend-email`, { method: "POST" });
+      setMessage(`Email reenviado a ${data.to}.`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Error");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function refund() {
     if (!order) return;
     const payment = order.payments.find((p) => p.status === "SUCCEEDED") ?? order.payments[0];
@@ -197,6 +212,24 @@ export function OrderDetailClient({ id }: { id: string }) {
             <button className="button button--secondary w-full" type="button" disabled={saving} onClick={refund}>
               Reembolsar
             </button>
+          </div>
+
+          <div className="border hairline bg-paper p-5">
+            <h2 className="text-[1.4rem] uppercase tracking-[0.12em] mb-4">Email de confirmación</h2>
+            <p className="text-[1.3rem] mb-4">
+              {order.email}
+            </p>
+            <button
+              className="button button--secondary w-full"
+              type="button"
+              disabled={saving}
+              onClick={resendEmail}
+            >
+              Reenviar email de confirmación
+            </button>
+            <p className="text-[1.15rem] text-muted mt-3">
+              Envía de nuevo el correo con el número de pedido, el agradecimiento y el desglose (editable en Ajustes).
+            </p>
           </div>
 
           <div className="border hairline bg-paper p-5">

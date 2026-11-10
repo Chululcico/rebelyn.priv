@@ -12,8 +12,9 @@ function getClient(): Resend | null {
 }
 
 /**
- * Envía un email transaccional. Sin RESEND_API_KEY, el email se registra en
- * el log del servidor (útil en desarrollo): nada se pierde ni se rompe.
+ * Envía un email transaccional con Resend.
+ * Si falta RESEND_API_KEY o Resend rechaza el envío, devuelve { ok: false }
+ * con el motivo (para poder mostrarlo en el panel de administración).
  */
 export async function sendEmail(params: { to: string; subject: string; react: ReactElement }): Promise<{ ok: boolean; error?: string }> {
   const resend = getClient();
@@ -21,10 +22,11 @@ export async function sendEmail(params: { to: string; subject: string; react: Re
   if (!resend) {
     if (!env.isProd) {
       console.info(`[email:simulado] Para: ${params.to} · Asunto: ${params.subject}`);
-    } else {
-      console.error(`[email:no-enviado] Falta RESEND_API_KEY · ${params.subject}`);
     }
-    return { ok: true };
+    return {
+      ok: false,
+      error: "Los correos no se pueden enviar: falta RESEND_API_KEY en la configuración de Vercel.",
+    };
   }
 
   try {
@@ -35,6 +37,8 @@ export async function sendEmail(params: { to: string; subject: string; react: Re
     }
     return { ok: true };
   } catch (error) {
-    return { ok: false, error: error instanceof Error ? error.message : "Error de envío" };
+    const message = error instanceof Error ? error.message : "Error de envío";
+    console.error(`[email:error] ${params.subject}: ${message}`);
+    return { ok: false, error: message };
   }
 }

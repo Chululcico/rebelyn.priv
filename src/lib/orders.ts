@@ -1,6 +1,6 @@
 import "server-only";
 import { db } from "@/lib/db";
-import type { Prisma } from "@prisma/client";
+import type { Order, Prisma } from "@prisma/client";
 import { generateOrderNumber } from "@/lib/slug";
 import { applyDiscount } from "@/lib/discounts";
 import { quoteShipping } from "@/lib/shipping";
@@ -264,26 +264,49 @@ export function plainJson<T>(value: T): Prisma.InputJsonValue {
 }
 
 /**
- * Envía al cliente el email de confirmación de pedido con el número y el
- * agradecimiento. El asunto y el mensaje se editan en /admin/settings
- * ("Email de pedido confirmado"); el desglose del pedido y la dirección de
- * envío se añaden siempre automáticamente. No lanza nunca.
+ * Prepara y envía el email de confirmación de un pedido (asunto y mensaje
+ * editables en /admin/settings; el desglose y la dirección van siempre).
+ * Devuelve el resultado para poder mostrar el motivo si falla.
  */
+async function sendOrderEmail(
+  order: Order & { items?: { productName: string; size: string; qty: number; totalCents: number }[] },
+): Promise<{ ok: true; to: string } | { ok: false; error: string }> {
+  try {
+    const { orderEmail } = await getSettings();
+    const subject = orderEmail.subject.split("{orderNumber}").join(order.orderNumber);
+    const sent = await sendEmail({
+      to: order.email,
+      subject,
+      react: orderPaidEmail(order, { message: orderEmail.message }),
+    });
+    if (!sent.ok) return { ok: false, error: sent.error ?? "No se pudo enviar el email." };
+    return { ok: true, to: order.email };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Error de envío" };
+  }
+}
+
+/** Envío automático tras registrar el pedido: solo deja constancia en el log si falla. */
 async function sendOrderConfirmation(orderId: string): Promise<void> {
   const fullOrder = await db.order.findUnique({ where: { id: orderId }, include: { items: true } });
   if (!fullOrder) return;
-  try {
-    const { orderEmail } = await getSettings();
-    const subject = orderEmail.subject.split("{orderNumber}").join(fullOrder.orderNumber);
-    const sent = await sendEmail({
-      to: fullOrder.email,
-      subject,
-      react: orderPaidEmail(fullOrder, { message: orderEmail.message }),
-    });
-    if (!sent.ok) console.error(`[orders] Email de confirmación no enviado (${fullOrder.orderNumber}):`, sent.error);
-  } catch (e) {
-    console.error("[orders] Error enviando email de confirmación:", e);
+  const result = await sendOrderEmail(fullOrder);
+  if (!result.ok) console.error(`[orders] Email de confirmación no enviado (${fullOrder.orderNumber}):`, result.error);
+}
+
+/**
+ * Reenvía manualmente el email de confirmación desde el panel de
+ * administración. Devuelve el resultado para mostrarlo al admin.
+ */
+export async function resendOrderConfirmation(
+  orderId: string,
+): Promise<{ ok: true; to: string } | { ok: false; error: string }> {
+  const order = await db.order.findUnique({ where: { id: orderId }, include: { items: true } });
+  if (!order) return { ok: false, error: "Pedido no encontrado." };
+  if (!["PAID", "PROCESSING", "SHIPPED", "DELIVERED"].includes(order.status)) {
+    return { ok: false, error: "El email de confirmación solo se envía en pedidos pagados." };
   }
+  return sendOrderEmail(order);
 }
 
 /**
