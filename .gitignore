@@ -14,3 +14,6 @@ prisma/*.db
 npm-debug.log*
 yarn-error.log*
 .DS_Store
+
+# Scripts temporales de mantenimiento
+tmp-*.cjs
