@@ -273,7 +273,10 @@ async function sendOrderEmail(
 ): Promise<{ ok: true; to: string } | { ok: false; error: string }> {
   try {
     const { orderEmail } = await getSettings();
-    const subject = orderEmail.subject.split("{orderNumber}").join(order.orderNumber);
+    const firstName = (order.shipName || "").trim().split(/\s+/)[0] || "";
+    const subject = orderEmail.subject
+      .split("{orderNumber}").join(order.orderNumber)
+      .split("{nombre}").join(firstName);
     const sent = await sendEmail({
       to: order.email,
       subject,

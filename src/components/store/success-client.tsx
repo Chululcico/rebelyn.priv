@@ -156,7 +156,7 @@ function SuccessInner() {
     return (
       <section className="page-width py-14 max-w-[72rem]">
         <div className="text-center mb-10">
-          <span className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-volt text-ink text-[2.4rem] mb-4" aria-hidden="true">✓</span>
+          <span className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-ink text-paper text-[2.4rem] mb-4" aria-hidden="true">✓</span>
           <h1 className="title-section mb-2">¡Pago completado!</h1>
           <p className="text-[1.5rem]">
             Gracias por tu compra. Tu pedido es <strong>{order.orderNumber}</strong>

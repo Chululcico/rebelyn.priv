@@ -77,7 +77,7 @@ export function Header() {
               <IconBag />
               <span
                 className={`absolute -top-2 -right-2 min-w-[1.8rem] h-[1.8rem] px-1 rounded-full text-[1.1rem] leading-[1.8rem] text-center ${
-                  count === 0 ? "bg-ink text-paper" : "bg-volt text-ink font-bold"
+                  count === 0 ? "bg-ink/10 text-ink" : "bg-ink text-paper font-bold"
                 }`}
               >
                 {count}

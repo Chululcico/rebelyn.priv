@@ -19,6 +19,9 @@ type Settings = {
   shippingMethods: ShippingMethod[];
 };
 
+const ORDER_EMAIL_FALLBACK =
+  "Gracias por comprar en REBELYN. Hemos recibido tu pago correctamente y ya estamos preparando tu pedido.";
+
 export function SettingsManager() {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [saving, setSaving] = useState(false);
@@ -32,6 +35,15 @@ export function SettingsManager() {
   useEffect(() => {
     api<{ settings: Settings }>("/api/admin/settings").then((d) => setSettings(d.settings)).catch((e) => setError(e.message));
   }, []);
+
+  // Si se llega desde el atajo "Correo del pedido", baja hasta esa sección
+  // cuando los ajustes ya están cargados (antes no existe en el DOM).
+  useEffect(() => {
+    if (!settings) return;
+    if (window.location.hash === "#email-pedido") {
+      document.getElementById("email-pedido")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [settings]);
 
   if (error) return <p className="text-[1.4rem] text-magenta">{error}</p>;
   if (!settings) return <p className="text-muted">Cargando ajustes…</p>;
@@ -156,7 +168,7 @@ export function SettingsManager() {
           </button>
         </div>
 
-        <h2 className="text-[1.5rem] uppercase tracking-[0.12em] mb-3">Email de pedido confirmado</h2>
+        <h2 id="email-pedido" className="text-[1.5rem] uppercase tracking-[0.12em] mb-3 scroll-mt-24">Email de pedido confirmado</h2>
         <div className="border hairline bg-paper p-5 mb-6">
           <label className="block mb-4"><span className="label">Asunto</span>
             <input className="field" value={settings.orderEmail.subject} onChange={(e) => set("orderEmail", { ...settings.orderEmail, subject: e.target.value })} />
@@ -167,6 +179,23 @@ export function SettingsManager() {
           <p className="text-[1.2rem] text-muted mt-3">
             Usa {"{orderNumber}"} para el número de pedido y {"{nombre}"} para el nombre del cliente. El email añade automáticamente el desglose del pedido y la dirección de envío.
           </p>
+
+          {/* Vista previa con datos de ejemplo */}
+          <div className="mt-4 border-t hairline pt-4">
+            <p className="text-[1.1rem] uppercase tracking-[0.12em] text-muted mb-2">Vista previa</p>
+            <p className="text-[1.35rem]">
+              <strong>
+                {(settings.orderEmail.subject || "")
+                  .split("{orderNumber}").join("RB-20261112-ABCD")
+                  .split("{nombre}").join("María")}
+              </strong>
+            </p>
+            <p className="text-[1.3rem] text-muted whitespace-pre-line">
+              {(settings.orderEmail.message || ORDER_EMAIL_FALLBACK)
+                .split("{orderNumber}").join("RB-20261112-ABCD")
+                .split("{nombre}").join("María")}
+            </p>
+          </div>
         </div>
 
         {error && <p className="text-[1.4rem] text-magenta mb-4" role="alert">{error}</p>}
@@ -176,7 +205,7 @@ export function SettingsManager() {
 
       {/* Zona de peligro: borrado total protegido por código. */}
       <section className="mt-16 max-w-[80rem] border-2 border-magenta/40 bg-magenta/[0.03] p-5 rounded-lg">
-        <h2 className="text-[1.6rem] uppercase tracking-[0.12em] text-magenta">Zona de peligro</h2>
+        <h2 className="text-[1.6rem] uppercase tracking-[0.12em] text-ink">Zona de peligro</h2>
         <p className="text-[1.3rem] text-muted mt-2 mb-4">
           Borra <strong>todos los datos</strong> de la tienda: pedidos, productos, categorías, variantes, stock,
           clientes, direcciones, descuentos, devoluciones, mensajes y suscriptores. Se mantienen tu cuenta de
@@ -199,7 +228,7 @@ export function SettingsManager() {
             type="button"
             onClick={resetStore}
             disabled={resetting || resetCode.trim().length === 0}
-            className="button !bg-magenta !text-white disabled:opacity-50"
+            className="button !bg-ink !text-paper disabled:opacity-50"
           >
             {resetting ? "Borrando…" : "Borrar todos los datos"}
           </button>

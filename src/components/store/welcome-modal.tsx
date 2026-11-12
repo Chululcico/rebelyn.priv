@@ -153,7 +153,7 @@ export function WelcomeModal() {
             className="pointer-events-none absolute inset-0 opacity-40"
             style={{
               background:
-                "radial-gradient(circle at 20% 0%, rgba(0,255,118,.35), transparent 55%), radial-gradient(circle at 85% 100%, rgba(211,2,181,.35), transparent 55%)",
+                "radial-gradient(circle at 20% 0%, rgba(255,255,255,.16), transparent 55%), radial-gradient(circle at 85% 100%, rgba(255,255,255,.08), transparent 55%)",
             }}
           />
           <button

@@ -2,8 +2,8 @@
 
 /* ═══════════════════════════════════════════════════════════════════════════
    REBELYN · Tokens de diseño
-   La identidad sale de la maqueta original: papel blanco, tinta casi negra,
-   acento verde volt y magenta para interacciones.
+   Identidad monocroma: papel blanco, tinta casi negra y grises neutros.
+   Sin verdes ni morados: todo el sitio usa blanco, negro y gris.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 @theme {
@@ -12,14 +12,15 @@
   --color-paper: #ffffff;
   --color-muted: rgb(32 32 32 / 75%);
   --color-hairline: rgb(32 32 32 / 12%);
-  --color-volt: #00ff76;
-  --color-neon: #12e499;
-  --color-magenta: #d302b5;
+  /* Antiguos acentos de color, ahora neutros para mantener los mismos usos. */
+  --color-volt: #ffffff;
+  --color-neon: #e8e8e8;
+  --color-magenta: #6b6b6b;
   --color-wash: #f6f6f4;
 
   --font-sans: Helvetica, Arial, sans-serif;
 
-  --color-volt-dark: #0b7a45;
+  --color-volt-dark: #121212;
 
   --spacing-page: 140rem;
 }
@@ -180,15 +181,15 @@ video {
 }
 
 .button--volt {
-  background: var(--color-volt);
-  border-color: var(--color-volt);
-  color: var(--color-ink);
-}
-
-.button--volt:hover {
   background: var(--color-ink);
   border-color: var(--color-ink);
   color: var(--color-paper);
+}
+
+.button--volt:hover {
+  background: transparent;
+  border-color: var(--color-ink);
+  color: var(--color-ink);
 }
 
 .button:disabled {

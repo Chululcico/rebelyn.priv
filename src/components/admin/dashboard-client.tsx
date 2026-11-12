@@ -54,7 +54,17 @@ export function DashboardClient() {
 
   return (
     <div>
-      <h1 className="text-[2.2rem] uppercase tracking-[0.12em] mb-6">Dashboard</h1>
+      <h1 className="text-[2.2rem] uppercase tracking-[0.12em] mb-4">Dashboard</h1>
+
+      {/* Atajo al texto del correo automático de pedido. */}
+      <div className="mb-8">
+        <Link
+          href="/admin/settings#email-pedido"
+          className="button button--secondary !px-4 !py-2 text-[1.15rem]"
+        >
+          ✎ Editar correo automático del pedido
+        </Link>
+      </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 mb-10">
         {stats.map((stat) => (
