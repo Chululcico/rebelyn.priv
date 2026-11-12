@@ -13,6 +13,7 @@ type Dashboard = {
   recentOrders: { id: string; orderNumber: string; status: string; totalCents: number; createdAt: string; shipName: string }[];
   customers: number;
   online: number;
+  newsletterSubscribers: number;
 };
 
 export function DashboardClient() {
@@ -50,19 +51,26 @@ export function DashboardClient() {
     { label: "Pedidos pendientes", value: String(data.orders.pending), sub: "de pago" },
     { label: "Enviados", value: String(data.orders.shipped), sub: "en tránsito" },
     { label: "Clientes", value: String(data.customers), sub: "registrados" },
+    { label: "Newsletter", value: String(data.newsletterSubscribers), sub: "suscriptores activos" },
   ];
 
   return (
     <div>
       <h1 className="text-[2.2rem] uppercase tracking-[0.12em] mb-4">Dashboard</h1>
 
-      {/* Atajo al texto del correo automático de pedido. */}
-      <div className="mb-8">
+      {/* Atajos del panel. */}
+      <div className="mb-8 flex flex-wrap gap-3">
         <Link
           href="/admin/settings#email-pedido"
           className="button button--secondary !px-4 !py-2 text-[1.15rem]"
         >
           ✎ Editar correo automático del pedido
+        </Link>
+        <Link
+          href="/admin/newsletter"
+          className="button button--secondary !px-4 !py-2 text-[1.15rem]"
+        >
+          ✉ Enviar newsletter · {data.newsletterSubscribers} suscriptores
         </Link>
       </div>
 

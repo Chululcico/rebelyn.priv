@@ -27,6 +27,7 @@ export const GET = withApi(async () => {
     recentOrders,
     customerCount,
     activeNow,
+    newsletterSubscribers,
   ] = await Promise.all([
     db.order.aggregate({ where: { ...paidWhere, paidAt: { gte: startOfDay } }, _sum: { totalCents: true }, _count: true }),
     db.order.aggregate({ where: { ...paidWhere, paidAt: { gte: startOfWeek } }, _sum: { totalCents: true }, _count: true }),
@@ -54,6 +55,7 @@ export const GET = withApi(async () => {
     db.order.findMany({ orderBy: { createdAt: "desc" }, take: 8, include: { items: { take: 2 } } }),
     db.user.count({ where: { role: "CUSTOMER" } }),
     db.presence.count({ where: { lastSeen: { gte: new Date(Date.now() - 3 * 60 * 1000) } } }),
+    db.newsletterSubscriber.count({ where: { active: true } }),
   ]);
 
   return NextResponse.json({
@@ -71,5 +73,6 @@ export const GET = withApi(async () => {
     recentOrders,
     customers: customerCount,
     online: activeNow,
+    newsletterSubscribers,
   });
 });

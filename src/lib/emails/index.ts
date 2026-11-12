@@ -42,3 +42,58 @@ export async function sendEmail(params: { to: string; subject: string; react: Re
     return { ok: false, error: message };
   }
 }
+
+/**
+ * Envía muchos emails en lotes de Resend (máx. 100 por lote).
+ * Devuelve cuántos se aceptaron y, si algo falla, el motivo.
+ */
+export async function sendEmailBatch(
+  params: { to: string; subject: string; react: ReactElement }[],
+): Promise<{ ok: boolean; sent: number; failed: number; error?: string }> {
+  if (params.length === 0) return { ok: true, sent: 0, failed: 0 };
+
+  const resend = getClient();
+  if (!resend) {
+    return {
+      ok: false,
+      sent: 0,
+      failed: params.length,
+      error: "Los correos no se pueden enviar: falta RESEND_API_KEY en la configuración de Vercel.",
+    };
+  }
+
+  const CHUNK = 100;
+  let sent = 0;
+  let failed = 0;
+  let lastError: string | undefined;
+
+  for (let i = 0; i < params.length; i += CHUNK) {
+    const chunk = params.slice(i, i + CHUNK);
+    try {
+      const { error } = await resend.batch.send(
+        chunk.map((email) => ({
+          from: env.emailFrom,
+          to: email.to,
+          subject: email.subject,
+          react: email.react,
+        })),
+      );
+      if (error) {
+        failed += chunk.length;
+        lastError = error.message;
+        console.error(`[email:batch] ${error.message}`);
+      } else {
+        sent += chunk.length;
+      }
+    } catch (error) {
+      failed += chunk.length;
+      lastError = error instanceof Error ? error.message : "Error de envío";
+      console.error(`[email:batch] ${lastError}`);
+    }
+
+    // Resend permite ~2 peticiones por segundo: pequeña pausa entre lotes.
+    if (i + CHUNK < params.length) await new Promise((resolve) => setTimeout(resolve, 600));
+  }
+
+  return { ok: failed === 0, sent, failed, error: lastError };
+}

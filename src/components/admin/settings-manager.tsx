@@ -19,14 +19,13 @@ type Settings = {
   shippingMethods: ShippingMethod[];
 };
 
-const ORDER_EMAIL_FALLBACK =
-  "Gracias por comprar en REBELYN. Hemos recibido tu pago correctamente y ya estamos preparando tu pedido.";
-
 export function SettingsManager() {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [preview, setPreview] = useState<{ subject: string; html: string } | null>(null);
+  const [previewError, setPreviewError] = useState<string | null>(null);
   const [resetCode, setResetCode] = useState("");
   const [resetting, setResetting] = useState(false);
   const [resetResult, setResetResult] = useState<string | null>(null);
@@ -35,6 +34,36 @@ export function SettingsManager() {
   useEffect(() => {
     api<{ settings: Settings }>("/api/admin/settings").then((d) => setSettings(d.settings)).catch((e) => setError(e.message));
   }, []);
+
+  // Vista previa REAL: se pide al servidor el mismo HTML que recibe el cliente,
+  // usando el asunto/mensaje que hay ahora mismo en el formulario.
+  useEffect(() => {
+    if (!settings) return;
+    const subject = settings.orderEmail.subject;
+    const message = settings.orderEmail.message;
+
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => {
+      api<{ subject: string; html: string }>("/api/admin/email-preview", {
+        method: "POST",
+        body: JSON.stringify({ subject, message }),
+        signal: controller.signal,
+      })
+        .then((data) => {
+          setPreview(data);
+          setPreviewError(null);
+        })
+        .catch((e) => {
+          if (e instanceof DOMException && e.name === "AbortError") return;
+          setPreviewError(e instanceof Error ? e.message : "No se pudo cargar la vista previa");
+        });
+    }, 450);
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [settings?.orderEmail.subject, settings?.orderEmail.message]);
 
   // Si se llega desde el atajo "Correo del pedido", baja hasta esa sección
   // cuando los ajustes ya están cargados y la resalta un momento.
@@ -191,20 +220,33 @@ export function SettingsManager() {
               Usa {"{orderNumber}"} para el número de pedido y {"{nombre}"} para el nombre del cliente. El email añade automáticamente el desglose del pedido y la dirección de envío.
             </p>
 
-            {/* Vista previa con datos de ejemplo */}
+            {/* Vista previa REAL, generada con la misma plantilla que se envía */}
             <div className="mt-4 border-t hairline pt-4">
-              <p className="text-[1.1rem] uppercase tracking-[0.12em] text-muted mb-2">Vista previa</p>
-              <p className="text-[1.35rem]">
-                <strong>
-                  {(settings.orderEmail.subject || "")
-                    .split("{orderNumber}").join("RB-20261112-ABCD")
-                    .split("{nombre}").join("María")}
-                </strong>
+              <p className="text-[1.1rem] uppercase tracking-[0.12em] text-muted mb-2">Así lo verá el cliente</p>
+              <p className="text-[1.35rem] mb-3">
+                <span className="text-muted">Asunto: </span>
+                <strong>{preview?.subject ?? "Cargando…"}</strong>
               </p>
-              <p className="text-[1.3rem] text-muted whitespace-pre-line">
-                {(settings.orderEmail.message || ORDER_EMAIL_FALLBACK)
-                  .split("{orderNumber}").join("RB-20261112-ABCD")
-                  .split("{nombre}").join("María")}
+              {previewError ? (
+                <p className="text-[1.3rem] text-magenta" role="alert">No se pudo cargar la vista previa: {previewError}</p>
+              ) : (
+                <div className="border hairline bg-paper overflow-hidden">
+                  {preview ? (
+                    <iframe
+                      title="Vista previa del email de pedido confirmado"
+                      srcDoc={preview.html}
+                      sandbox=""
+                      className="w-full block"
+                      style={{ height: "640px", border: 0 }}
+                    />
+                  ) : (
+                    <p className="p-5 text-[1.3rem] text-muted">Cargando vista previa…</p>
+                  )}
+                </div>
+              )}
+              <p className="text-[1.2rem] text-muted mt-3">
+                Esta es la misma plantilla que recibe el cliente, con un pedido de ejemplo. El desglose de productos,
+                la dirección de envío y el pie se añaden siempre; tu asunto y tu mensaje aparecen tal cual.
               </p>
             </div>
           </div>

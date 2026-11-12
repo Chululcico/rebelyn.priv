@@ -73,6 +73,11 @@ export const contactSchema = z.object({
 
 export const newsletterSchema = z.object({ email: emailSchema });
 
+export const newsletterCampaignSchema = z.object({
+  subject: z.string().trim().min(3, "El asunto es demasiado corto").max(160),
+  message: z.string().trim().min(3, "El mensaje es demasiado corto").max(5000),
+});
+
 export const profileSchema = z.object({
   name: z.string().trim().min(2).max(80).optional(),
   phone: z.string().trim().max(30).optional().or(z.literal("")),

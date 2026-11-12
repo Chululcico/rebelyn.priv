@@ -253,6 +253,35 @@ export function welcomeEmail(name?: string | null) {
   );
 }
 
+/**
+ * Newsletter general enviada desde /admin/newsletter.
+ * Cada suscriptor recibe su propio enlace de baja firmado.
+ */
+export function newsletterEmail(opts: { subject: string; message: string; unsubscribeUrl: string }) {
+  const paragraphs = opts.message
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  return (
+    <Shell>
+      <h1 style={styles.h1}>{opts.subject}</h1>
+      {paragraphs.map((p, i) => (
+        <p key={i} style={styles.p}>
+          {p}
+        </p>
+      ))}
+      <p style={styles.muted}>
+        Recibes este correo porque te suscribiste a la newsletter de REBELYN.
+        <br />
+        <a href={opts.unsubscribeUrl} style={{ color: "#202020" }}>
+          Darme de baja
+        </a>
+      </p>
+    </Shell>
+  );
+}
+
 export function resetPasswordEmail(resetUrl: string) {
   return (
     <Shell>

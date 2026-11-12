@@ -17,6 +17,7 @@ const NAV = [
   { href: "/admin/discounts", label: "Descuentos" },
   { href: "/admin/returns", label: "Devoluciones" },
   { href: "/admin/messages", label: "Mensajes" },
+  { href: "/admin/newsletter", label: "Newsletter" },
   { href: "/admin/settings", label: "Ajustes" },
   { href: "/admin/settings#email-pedido", label: "Correo del pedido" },
   { href: "/admin/audit", label: "Auditoría" },
