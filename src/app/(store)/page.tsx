@@ -39,7 +39,7 @@ export default async function HomePage() {
             width={420}
             height={420}
             fetchPriority="high"
-            className="mx-auto w-[min(54vw,24rem)] h-auto"
+            className="mx-auto w-[min(64vw,30rem)] h-auto"
             style={{ imageRendering: "crisp-edges" }}
           />
           <p
