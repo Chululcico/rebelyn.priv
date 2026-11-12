@@ -37,12 +37,22 @@ export function SettingsManager() {
   }, []);
 
   // Si se llega desde el atajo "Correo del pedido", baja hasta esa sección
-  // cuando los ajustes ya están cargados (antes no existe en el DOM).
+  // cuando los ajustes ya están cargados y la resalta un momento.
   useEffect(() => {
-    if (!settings) return;
-    if (window.location.hash === "#email-pedido") {
-      document.getElementById("email-pedido")?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
+    if (!settings || window.location.hash !== "#email-pedido") return;
+    const el = document.getElementById("email-pedido");
+    if (!el) return;
+
+    const timers: number[] = [];
+    const go = () => {
+      el.scrollIntoView({ block: "start" });
+      el.classList.add("outline", "outline-2", "outline-offset-4", "outline-ink");
+      timers.push(window.setTimeout(() => el.classList.remove("outline", "outline-2", "outline-offset-4", "outline-ink"), 2400));
+    };
+    // Varios intentos: el router de Next puede restaurar el scroll después.
+    timers.push(window.setTimeout(go, 150), window.setTimeout(go, 700), window.setTimeout(go, 1400));
+
+    return () => timers.forEach((t) => window.clearTimeout(t));
   }, [settings]);
 
   if (error) return <p className="text-[1.4rem] text-magenta">{error}</p>;
@@ -168,35 +178,37 @@ export function SettingsManager() {
           </button>
         </div>
 
-        <h2 id="email-pedido" className="text-[1.5rem] uppercase tracking-[0.12em] mb-3 scroll-mt-24">Email de pedido confirmado</h2>
-        <div className="border hairline bg-paper p-5 mb-6">
-          <label className="block mb-4"><span className="label">Asunto</span>
-            <input className="field" value={settings.orderEmail.subject} onChange={(e) => set("orderEmail", { ...settings.orderEmail, subject: e.target.value })} />
-          </label>
-          <label className="block"><span className="label">Mensaje para el cliente</span>
-            <textarea className="field" rows={5} value={settings.orderEmail.message} onChange={(e) => set("orderEmail", { ...settings.orderEmail, message: e.target.value })} />
-          </label>
-          <p className="text-[1.2rem] text-muted mt-3">
-            Usa {"{orderNumber}"} para el número de pedido y {"{nombre}"} para el nombre del cliente. El email añade automáticamente el desglose del pedido y la dirección de envío.
-          </p>
+        <section id="email-pedido" className="scroll-mt-24 mb-6 rounded-lg transition-[outline] duration-300">
+          <h2 className="text-[1.5rem] uppercase tracking-[0.12em] mb-3">Email de pedido confirmado</h2>
+          <div className="border hairline bg-paper p-5">
+            <label className="block mb-4"><span className="label">Asunto</span>
+              <input className="field" value={settings.orderEmail.subject} onChange={(e) => set("orderEmail", { ...settings.orderEmail, subject: e.target.value })} />
+            </label>
+            <label className="block"><span className="label">Mensaje para el cliente</span>
+              <textarea className="field" rows={5} value={settings.orderEmail.message} onChange={(e) => set("orderEmail", { ...settings.orderEmail, message: e.target.value })} />
+            </label>
+            <p className="text-[1.2rem] text-muted mt-3">
+              Usa {"{orderNumber}"} para el número de pedido y {"{nombre}"} para el nombre del cliente. El email añade automáticamente el desglose del pedido y la dirección de envío.
+            </p>
 
-          {/* Vista previa con datos de ejemplo */}
-          <div className="mt-4 border-t hairline pt-4">
-            <p className="text-[1.1rem] uppercase tracking-[0.12em] text-muted mb-2">Vista previa</p>
-            <p className="text-[1.35rem]">
-              <strong>
-                {(settings.orderEmail.subject || "")
+            {/* Vista previa con datos de ejemplo */}
+            <div className="mt-4 border-t hairline pt-4">
+              <p className="text-[1.1rem] uppercase tracking-[0.12em] text-muted mb-2">Vista previa</p>
+              <p className="text-[1.35rem]">
+                <strong>
+                  {(settings.orderEmail.subject || "")
+                    .split("{orderNumber}").join("RB-20261112-ABCD")
+                    .split("{nombre}").join("María")}
+                </strong>
+              </p>
+              <p className="text-[1.3rem] text-muted whitespace-pre-line">
+                {(settings.orderEmail.message || ORDER_EMAIL_FALLBACK)
                   .split("{orderNumber}").join("RB-20261112-ABCD")
                   .split("{nombre}").join("María")}
-              </strong>
-            </p>
-            <p className="text-[1.3rem] text-muted whitespace-pre-line">
-              {(settings.orderEmail.message || ORDER_EMAIL_FALLBACK)
-                .split("{orderNumber}").join("RB-20261112-ABCD")
-                .split("{nombre}").join("María")}
-            </p>
+              </p>
+            </div>
           </div>
-        </div>
+        </section>
 
         {error && <p className="text-[1.4rem] text-magenta mb-4" role="alert">{error}</p>}
         {saved && <p className="text-[1.4rem] text-volt-dark mb-4" role="status">Ajustes guardados.</p>}
