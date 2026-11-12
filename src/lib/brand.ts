@@ -1,13 +1,16 @@
-/** Activos de marca. Sustituye estas URLs por las tuyas definitivas cuando quieras. */
+/** Activos de marca. */
 export const BRAND = {
   name: "REBELYN",
   tagline: "Rompe con lo común",
   subline: "Combina comodidad y estilo cada día",
-  // Logos e imágenes alojadas actualmente en postimg.cc (activos reales de la marca)
-  logoGif: "https://i.postimg.cc/bvsZCR8m/Rebelyn-giro-3D-lento.gif",
-  logoPng: "https://i.postimg.cc/NjwK6zhC/logo-pgn.png",
-  favicon: "https://i.postimg.cc/RVt3nz8z/logo.jpg",
-  heroImage: "https://i.postimg.cc/8CvYXBsx/image.png",
+  // Activos locales optimizados (WebP/GIF comprimido) para que la web cargue rápido.
+  logoGif: "/img/brand/logo-spin.gif",
+  logoPng: "/img/brand/logo-800.png",
+  logoUi: "/img/brand/logo-256.webp",
+  logoHero: "/img/brand/logo-512.webp",
+  heroImage: "/img/brand/hero-1280.webp",
+  heroImageMobile: "/img/brand/hero-960.webp",
+  favicon: "/img/brand/favicon-128.png",
   instagram: "https://www.instagram.com/rebelyn.off/",
   tiktok: "https://www.tiktok.com/@rebelyn.off",
   email: "rebelynoff@gmail.com",

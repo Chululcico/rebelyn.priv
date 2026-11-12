@@ -16,20 +16,25 @@ export default async function HomePage() {
 
   return (
     <>
-      {/* Adelanta la imagen de portada: es el elemento más grande de la primera pantalla. */}
-      <link rel="preload" as="image" href={BRAND.heroImage} fetchPriority="high" />
+      {/* Adelanta la imagen de portada: es el elemento más grande de la primera pantalla.
+          En móvil se sirve una versión más ligera. */}
+      <link rel="preload" as="image" href={BRAND.heroImageMobile} media="(max-width: 749px)" fetchPriority="high" />
+      <link rel="preload" as="image" href={BRAND.heroImage} media="(min-width: 750px)" fetchPriority="high" />
 
       {/* Portada con imagen fija al iniciar (fija solo en escritorio:
           en móvil el parallax por software cuesta fluidez). */}
       <section
-        className="relative min-h-[92svh] md:min-h-screen flex items-center justify-center bg-cover bg-center md:bg-fixed"
-        style={{ backgroundImage: `url('${BRAND.heroImage}')` }}
+        className="hero-bg relative min-h-[92svh] md:min-h-screen flex items-center justify-center bg-cover bg-center md:bg-fixed"
       >
+        <style>{`
+          .hero-bg { background-image: url('${BRAND.heroImageMobile}'); }
+          @media (min-width: 750px) { .hero-bg { background-image: url('${BRAND.heroImage}'); } }
+        `}</style>
         <div className="absolute inset-0 bg-black/25" />
         <div className="relative text-center px-6 py-16">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={BRAND.logoPng}
+            src={BRAND.logoHero}
             alt="REBELYN"
             width={420}
             height={420}

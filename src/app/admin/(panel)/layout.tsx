@@ -34,7 +34,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <div className="flex items-center justify-between gap-3 px-4 pt-4 md:px-0 md:pt-0 md:mb-6">
           <Link href="/" className="block">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={BRAND.logoPng} alt="REBELYN" className="h-9 w-auto md:h-10" />
+            <img src={BRAND.logoUi} alt="REBELYN" className="h-9 w-auto md:h-10" />
           </Link>
           <form action="/api/auth/logout" method="post" className="md:hidden">
             <button type="submit" className="text-[1.2rem] underline text-muted">Salir</button>

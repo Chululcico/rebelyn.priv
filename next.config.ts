@@ -28,7 +28,15 @@ const nextConfig: NextConfig = {
   },
   serverExternalPackages: ["firebase-admin", "jose", "jwks-rsa", "@google-cloud/firestore"],
   async headers() {
-    return [{ source: "/(.*)", headers: securityHeaders }];
+    return [
+      { source: "/(.*)", headers: securityHeaders },
+      {
+        // Los activos de marca llevan el tamaño/versión en el nombre, así que
+        // se pueden cachear un año sin riesgo.
+        source: "/img/brand/:path*",
+        headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }],
+      },
+    ];
   },
 };
 

@@ -169,7 +169,7 @@ export function WelcomeModal() {
 
           <div className="relative mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-white/95 shadow-lg ring-4 ring-white/20">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={BRAND.logoPng} alt="REBELYN" width={80} height={80} className="h-[7.2rem] w-auto" />
+            <img src={BRAND.logoUi} alt="REBELYN" width={80} height={80} className="h-[7.2rem] w-auto" />
           </div>
 
           <h2 id="welcome-title" className="relative mt-4 text-[2.4rem] uppercase tracking-[0.18em] text-white">

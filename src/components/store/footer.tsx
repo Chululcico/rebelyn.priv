@@ -57,7 +57,7 @@ export function Footer() {
         <div className="col-span-2 md:col-span-1">
           <a href="/" className="inline-block" aria-label="REBELYN · Inicio">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={BRAND.logoPng} alt="REBELYN" width={120} height={120} loading="lazy" decoding="async" className="h-16 w-auto" />
+            <img src={BRAND.logoUi} alt="REBELYN" width={120} height={120} loading="lazy" decoding="async" className="h-16 w-auto" />
           </a>
           <p className="font-script text-[2.2rem] leading-tight text-magenta mt-2">{BRAND.tagline}</p>
           <p className="text-[1.35rem] text-muted mt-1">Combina comodidad y estilo cada día.</p>
