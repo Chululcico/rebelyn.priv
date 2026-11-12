@@ -6,7 +6,7 @@ import { applyDiscount } from "@/lib/discounts";
 import { quoteShipping } from "@/lib/shipping";
 import { consumeStock, StockError, validateStockForItems } from "@/lib/stock";
 import { sendEmail } from "@/lib/emails";
-import { orderPaidEmail } from "@/lib/emails/templates";
+import { orderInternalEmail, orderPaidEmail } from "@/lib/emails/templates";
 import { getSettings } from "@/lib/settings";
 
 export type CheckoutInput = {
@@ -286,12 +286,29 @@ async function sendOrderEmail(
   }
 }
 
+/** Copia interna automática de cada pedido (no se envía al reenviar a mano). */
+const INTERNAL_ORDER_COPY = "rebelyn.web@gmail.com";
+
 /** Envío automático tras registrar el pedido: solo deja constancia en el log si falla. */
 async function sendOrderConfirmation(orderId: string): Promise<void> {
   const fullOrder = await db.order.findUnique({ where: { id: orderId }, include: { items: true } });
   if (!fullOrder) return;
   const result = await sendOrderEmail(fullOrder);
   if (!result.ok) console.error(`[orders] Email de confirmación no enviado (${fullOrder.orderNumber}):`, result.error);
+
+  // Copia al correo del equipo. Best-effort: nunca bloquea el registro del pedido.
+  try {
+    const internal = await sendEmail({
+      to: INTERNAL_ORDER_COPY,
+      subject: `[Pedido] ${fullOrder.orderNumber} · ${fullOrder.shipName} · ${(fullOrder.totalCents / 100).toFixed(2)} €`,
+      react: orderInternalEmail(fullOrder),
+    });
+    if (!internal.ok) {
+      console.error(`[orders] Copia interna no enviada (${fullOrder.orderNumber}):`, internal.error);
+    }
+  } catch (e) {
+    console.error(`[orders] Copia interna no enviada (${fullOrder.orderNumber}):`, e);
+  }
 }
 
 /**

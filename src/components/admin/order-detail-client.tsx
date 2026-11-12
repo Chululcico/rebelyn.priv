@@ -200,6 +200,20 @@ export function OrderDetailClient({ id }: { id: string }) {
           </form>
 
           <div className="border hairline bg-paper p-5">
+            <h2 className="text-[1.4rem] uppercase tracking-[0.12em] mb-4">Etiqueta de envío</h2>
+            <p className="text-[1.3rem] text-muted mb-4">
+              Etiqueta A6 lista para imprimir con remitente, destinatario, peso, medidas y código de barras del pedido.
+            </p>
+            <Link
+              href={`/admin/labels/${order.id}`}
+              target="_blank"
+              className="button button--secondary w-full text-center"
+            >
+              Generar etiqueta
+            </Link>
+          </div>
+
+          <div className="border hairline bg-paper p-5">
             <h2 className="text-[1.4rem] uppercase tracking-[0.12em] mb-4">Reembolso</h2>
             <label className="block mb-3">
               <span className="label">Importe € (vacío = total)</span>

@@ -123,6 +123,89 @@ export function orderPaidEmail(
   );
 }
 
+/** Copia interna del pedido para el equipo (rebelyn.web@gmail.com). */
+export function orderInternalEmail(
+  order: Order & {
+    items: { productName: string; size: string; colorName: string | null; qty: number; totalCents: number }[];
+  },
+) {
+  const money = (cents: number) => `${(cents / 100).toFixed(2)} €`;
+  const totalUnits = order.items.reduce((sum, item) => sum + item.qty, 0);
+
+  return (
+    <Shell>
+      <h1 style={styles.h1}>Nuevo pedido {order.orderNumber}</h1>
+      <p style={styles.p}>
+        <strong>{totalUnits}</strong> {totalUnits === 1 ? "artículo" : "artículos"} · <strong>{money(order.totalCents)}</strong>
+      </p>
+      <div style={styles.box}>
+        <div style={styles.row}>
+          <span>Cliente</span>
+          <span>{order.shipName}</span>
+        </div>
+        <div style={styles.row}>
+          <span>Email</span>
+          <span>{order.email}</span>
+        </div>
+        {order.phone && (
+          <div style={styles.row}>
+            <span>Teléfono</span>
+            <span>{order.phone}</span>
+          </div>
+        )}
+        <div style={styles.row}>
+          <span>Envío</span>
+          <span>{order.shippingMethod ?? "standard"}</span>
+        </div>
+        <div style={styles.row}>
+          <span>Fecha</span>
+          <span>{new Date(order.createdAt).toLocaleString("es-ES")}</span>
+        </div>
+      </div>
+
+      <div style={styles.box}>
+        {order.items.map((item, i) => (
+          <div key={i} style={styles.row}>
+            <span>
+              {item.qty} × {item.productName} ({item.size}
+              {item.colorName ? ` · ${item.colorName}` : ""})
+            </span>
+            <span>{money(item.totalCents)}</span>
+          </div>
+        ))}
+        <div style={styles.row}>
+          <span>Subtotal</span>
+          <span>{money(order.subtotalCents)}</span>
+        </div>
+        <div style={styles.row}>
+          <span>Envío</span>
+          <span>{order.shippingCents === 0 ? "Gratis" : money(order.shippingCents)}</span>
+        </div>
+        {order.discountCents > 0 && (
+          <div style={styles.row}>
+            <span>Descuento {order.discountCode ? `(${order.discountCode})` : ""}</span>
+            <span>−{money(order.discountCents)}</span>
+          </div>
+        )}
+        <div style={{ ...styles.row, ...styles.total }}>
+          <span>Total</span>
+          <span>{money(order.totalCents)}</span>
+        </div>
+      </div>
+
+      {shippingAddress(order)}
+      {order.customerNote && (
+        <p style={styles.p}>
+          <strong>Nota del cliente:</strong>
+          <br />
+          {order.customerNote}
+        </p>
+      )}
+      <p style={styles.muted}>Copia automática del email de confirmación enviado al cliente.</p>
+    </Shell>
+  );
+}
+
 export function orderShippedEmail(order: Order) {
   return (
     <Shell>

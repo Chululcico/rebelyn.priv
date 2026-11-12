@@ -566,3 +566,18 @@ model ShippingRate {
   @@index([carrier, serviceCode, zone, active])
   @@index([minGrams, maxGrams])
 }
+
+// ── Presencia (usuarios activos ahora mismo) ──────────────────────────────────
+// Una fila por visitante (cookie anónima de 1 año). El navegador manda un
+// latido cada 45 s; el panel cuenta los vistos en los últimos 3 minutos.
+// No guarda IP ni datos personales.
+
+model Presence {
+  id        String   @id @default(cuid())
+  visitorId String   @unique
+  userId    String?
+  path      String?
+  lastSeen  DateTime @default(now())
+
+  @@index([lastSeen])
+}

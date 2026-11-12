@@ -19,6 +19,8 @@
 
   --font-sans: Helvetica, Arial, sans-serif;
 
+  --color-volt-dark: #0b7a45;
+
   --spacing-page: 140rem;
 }
 
@@ -32,6 +34,7 @@ html {
   font-size: 62.5%;
   background: var(--color-paper);
   scroll-behavior: smooth;
+  overflow-x: clip;
 }
 
 body {
@@ -43,11 +46,62 @@ body {
   color: var(--color-text);
   background: transparent;
   -webkit-font-smoothing: antialiased;
+  overflow-x: clip;
+}
+
+img,
+svg,
+video {
+  max-width: 100%;
+}
+
+/* Tipografía manuscrita (next/font la sirve desde el propio dominio:
+   sin peticiones externas y compatible con la CSP). */
+.font-script {
+  font-family: var(--font-script), "Segoe Script", "Bradley Hand", cursive;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  text-transform: none;
 }
 
 @media (min-width: 750px) {
   body {
     font-size: 1.6rem;
+  }
+}
+
+/* Móvil: textos legibles, campos sin zoom automático en iOS y densidad
+   de la rejilla ajustada para que todo quede cuadrado. */
+@media (max-width: 749px) {
+  body {
+    letter-spacing: 0.05rem;
+  }
+
+  .field {
+    /* 16px evita el zoom automático de Safari al enfocar un campo. */
+    font-size: 1.6rem;
+    padding: 1.1rem 1.2rem;
+  }
+
+  .button {
+    padding: 1.3rem 2.2rem;
+  }
+
+  .title-section {
+    font-size: clamp(2.2rem, 8vw, 3rem);
+  }
+
+  .running-text span {
+    font-size: 1.15rem;
+    margin-right: 2rem;
+  }
+
+  .running-text .tick {
+    margin-right: 2rem;
+  }
+
+  .product-grid {
+    gap: 1.8rem 0.8rem;
   }
 }
 
@@ -520,6 +574,39 @@ body {
   font-size: 1.4rem;
   color: var(--color-muted);
   white-space: pre-line;
+}
+
+/* Rendimiento: si el dispositivo pide menos movimiento, no animamos. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .running-text__track {
+    animation: none !important;
+  }
+}
+
+/* La marquesina no necesita repintarse en cada frame del resto de la página. */
+.running-text__track {
+  will-change: transform;
+}
+
+/* Entrada del cartel de bienvenida. */
+@keyframes welcomeIn {
+  from {
+    opacity: 0;
+    transform: translateY(2.4rem) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 /* Utilidades varias */

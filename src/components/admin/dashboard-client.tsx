@@ -12,6 +12,7 @@ type Dashboard = {
   topProducts: { name: string; slug: string; units: number; revenue: number }[];
   recentOrders: { id: string; orderNumber: string; status: string; totalCents: number; createdAt: string; shipName: string }[];
   customers: number;
+  online: number;
 };
 
 export function DashboardClient() {
@@ -19,13 +20,30 @@ export function DashboardClient() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    api<Dashboard>("/api/admin/dashboard").then(setData).catch((e) => setError(e.message));
+    let cancelled = false;
+    function load() {
+      api<Dashboard>("/api/admin/dashboard")
+        .then((d) => {
+          if (!cancelled) setData(d);
+        })
+        .catch((e) => {
+          if (!cancelled) setError(e.message);
+        });
+    }
+    load();
+    // Refresca las cifras (incluidos usuarios activos) sin recargar la página.
+    const interval = window.setInterval(load, 30_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
   }, []);
 
   if (error) return <p className="text-[1.4rem] text-magenta">{error}</p>;
   if (!data) return <p className="text-muted">Cargando dashboard…</p>;
 
   const stats = [
+    { label: "Activos ahora", value: String(data.online), sub: "últimos 3 minutos" },
     { label: "Ventas hoy", value: formatMoney(data.sales.todayCents), sub: `${data.sales.todayCount} pedidos` },
     { label: "Ventas 7 días", value: formatMoney(data.sales.weekCents), sub: `${data.sales.weekCount} pedidos` },
     { label: "Ventas mes", value: formatMoney(data.sales.monthCents), sub: `${data.sales.monthCount} pedidos` },

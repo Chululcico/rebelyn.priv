@@ -43,10 +43,10 @@ export function ProductCard({ product }: { product: ProductCardData }) {
       <div className="card__media">
         <Link href={`/product/${product.slug}`}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={product.image ?? ""} alt={product.name} loading="lazy" />
+          <img src={product.image ?? ""} alt={product.name} loading="lazy" decoding="async" />
           {product.hoverImage && product.hoverImage !== product.image && (
             /* eslint-disable-next-line @next/next/no-img-element */
-            <img src={product.hoverImage} alt="" loading="lazy" />
+            <img src={product.hoverImage} alt="" loading="lazy" decoding="async" />
           )}
         </Link>
 

@@ -24,6 +24,10 @@ export function SettingsManager() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [resetCode, setResetCode] = useState("");
+  const [resetting, setResetting] = useState(false);
+  const [resetResult, setResetResult] = useState<string | null>(null);
+  const [resetError, setResetError] = useState<string | null>(null);
 
   useEffect(() => {
     api<{ settings: Settings }>("/api/admin/settings").then((d) => setSettings(d.settings)).catch((e) => setError(e.message));
@@ -51,6 +55,37 @@ export function SettingsManager() {
   const set = <K extends keyof Settings>(key: K, value: Settings[K]) => setSettings((s) => (s ? { ...s, [key]: value } : s));
   const setMethod = (index: number, patch: Partial<ShippingMethod>) =>
     setSettings((s) => (s ? { ...s, shippingMethods: s.shippingMethods.map((m, i) => (i === index ? { ...m, ...patch } : m)) } : s));
+
+  async function resetStore() {
+    setResetError(null);
+    setResetResult(null);
+
+    if (resetCode.trim() !== "201983") {
+      setResetError("Código incorrecto. No se ha borrado nada.");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "¿SEGURO? Se borrarán TODOS los pedidos, productos, clientes, descuentos, devoluciones y mensajes.\n\nNo se puede deshacer. Se mantienen tu cuenta de administrador y los ajustes de la tienda.",
+    );
+    if (!confirmed) return;
+
+    setResetting(true);
+    try {
+      const res = await api<{ ok: boolean; deleted: { orders: number; products: number; customers: number } }>("/api/admin/reset", {
+        method: "POST",
+        body: JSON.stringify({ code: resetCode.trim() }),
+      });
+      setResetResult(
+        `Borrado completado: ${res.deleted.orders} pedidos, ${res.deleted.products} productos y ${res.deleted.customers} clientes.`,
+      );
+      setResetCode("");
+    } catch (e) {
+      setResetError(e instanceof Error ? e.message : "No se pudo borrar los datos.");
+    } finally {
+      setResetting(false);
+    }
+  }
 
   return (
     <div>
@@ -143,6 +178,40 @@ export function SettingsManager() {
         {saved && <p className="text-[1.4rem] text-volt-dark mb-4" role="status">Ajustes guardados.</p>}
         <button className="button" type="submit" disabled={saving}>{saving ? "Guardando…" : "Guardar ajustes"}</button>
       </form>
+
+      {/* Zona de peligro: borrado total protegido por código. */}
+      <section className="mt-16 max-w-[80rem] border-2 border-magenta/40 bg-magenta/[0.03] p-5 rounded-lg">
+        <h2 className="text-[1.6rem] uppercase tracking-[0.12em] text-magenta">Zona de peligro</h2>
+        <p className="text-[1.3rem] text-muted mt-2 mb-4">
+          Borra <strong>todos los datos</strong> de la tienda: pedidos, productos, categorías, variantes, stock,
+          clientes, direcciones, descuentos, devoluciones, mensajes y suscriptores. Se mantienen tu cuenta de
+          administrador y los ajustes de la tienda (envíos, email, datos fiscales). <strong>No se puede deshacer.</strong>
+        </p>
+        <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
+          <label className="block flex-1 max-w-[26rem]">
+            <span className="label">Código de seguridad</span>
+            <input
+              className="field"
+              type="password"
+              inputMode="numeric"
+              autoComplete="off"
+              placeholder="Introduce el código"
+              value={resetCode}
+              onChange={(e) => setResetCode(e.target.value)}
+            />
+          </label>
+          <button
+            type="button"
+            onClick={resetStore}
+            disabled={resetting || resetCode.trim().length === 0}
+            className="button !bg-magenta !text-white disabled:opacity-50"
+          >
+            {resetting ? "Borrando…" : "Borrar todos los datos"}
+          </button>
+        </div>
+        {resetError && <p className="text-[1.35rem] text-magenta mt-3" role="alert">{resetError}</p>}
+        {resetResult && <p className="text-[1.35rem] text-volt-dark mt-3" role="status">{resetResult}</p>}
+      </section>
     </div>
   );
 }

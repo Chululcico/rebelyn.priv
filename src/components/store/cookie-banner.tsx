@@ -19,24 +19,32 @@ export function CookieBanner() {
   const [marketing, setMarketing] = useState(false);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(KEY);
-      const welcomeDone = localStorage.getItem("rb_welcome_done");
-      if (!raw && welcomeDone) setVisible(true);
-    } catch {
-      if (localStorage.getItem("rb_welcome_done")) setVisible(true);
+    function hasConsent(): boolean {
+      try {
+        return Boolean(localStorage.getItem(KEY));
+      } catch {
+        return false;
+      }
     }
 
+    if (hasConsent()) return;
+
+    // El cartel de bienvenida avisa cuando se cierra (o cuando decide no
+    // mostrarse). Esperamos a ese aviso para no taparlo con el banner.
     const onWelcomeClosed = () => {
-      try {
-        const raw = localStorage.getItem(KEY);
-        if (!raw) setVisible(true);
-      } catch {
-        setVisible(true);
-      }
+      if (!hasConsent()) setVisible(true);
     };
     window.addEventListener("rb-welcome-closed", onWelcomeClosed);
-    return () => window.removeEventListener("rb-welcome-closed", onWelcomeClosed);
+
+    // Red de seguridad: si el cartel no llegase a cargar, mostramos el banner.
+    const fallback = window.setTimeout(() => {
+      if (!hasConsent()) setVisible(true);
+    }, 4000);
+
+    return () => {
+      window.removeEventListener("rb-welcome-closed", onWelcomeClosed);
+      window.clearTimeout(fallback);
+    };
   }, []);
 
   function save(next: { analytics: boolean; marketing: boolean }) {

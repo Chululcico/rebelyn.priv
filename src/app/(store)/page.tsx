@@ -4,7 +4,6 @@ import { queryProducts } from "@/lib/catalog";
 import { getSettings } from "@/lib/settings";
 import { formatMoney } from "@/lib/money";
 import { ProductCard } from "@/components/store/product-card";
-import { WelcomeModal } from "@/components/store/welcome-modal";
 
 export const dynamic = "force-dynamic";
 
@@ -17,21 +16,34 @@ export default async function HomePage() {
 
   return (
     <>
-      <WelcomeModal />
+      {/* Adelanta la imagen de portada: es el elemento más grande de la primera pantalla. */}
+      <link rel="preload" as="image" href={BRAND.heroImage} fetchPriority="high" />
 
-      {/* Portada con imagen fija al iniciar */}
+      {/* Portada con imagen fija al iniciar (fija solo en escritorio:
+          en móvil el parallax por software cuesta fluidez). */}
       <section
-        className="relative min-h-screen flex items-center justify-center bg-cover bg-center bg-fixed"
-        style={{ backgroundImage: `url('https://i.postimg.cc/8CvYXBsx/image.png')` }}
+        className="relative min-h-[92svh] md:min-h-screen flex items-center justify-center bg-cover bg-center md:bg-fixed"
+        style={{ backgroundImage: `url('${BRAND.heroImage}')` }}
       >
-        <div className="absolute inset-0 bg-black/20" />
+        <div className="absolute inset-0 bg-black/25" />
         <div className="relative text-center px-6 py-16">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={BRAND.logoPng} alt="" width={420} height={420} className="mx-auto w-[min(46vw,26rem)] h-auto" style={{ imageRendering: "crisp-edges" }} />
-          <p className="mt-6 text-[1.4rem] uppercase tracking-[0.3em] font-medium text-white" style={{ textShadow: "1px 1px 3px #000, 2px 2px 6px #000" }}>
+          <img
+            src={BRAND.logoPng}
+            alt="REBELYN"
+            width={420}
+            height={420}
+            fetchPriority="high"
+            className="mx-auto w-[min(54vw,24rem)] h-auto"
+            style={{ imageRendering: "crisp-edges" }}
+          />
+          <p
+            className="font-script mt-4 text-[clamp(2.8rem,7vw,5rem)] leading-none text-white"
+            style={{ textShadow: "1px 1px 4px #000, 2px 2px 10px #000" }}
+          >
             {BRAND.tagline}
           </p>
-          <p className="mt-2 text-[1.5rem] text-white" style={{ textShadow: "1px 1px 3px #000, 2px 2px 6px #000" }}>
+          <p className="mt-4 text-[1.35rem] uppercase tracking-[0.26em] font-medium text-white" style={{ textShadow: "1px 1px 3px #000, 2px 2px 6px #000" }}>
             {BRAND.subline}
           </p>
           <div className="mt-8">
@@ -70,7 +82,8 @@ export default async function HomePage() {
       {/* Sección de marca */}
       <section className="bg-wash py-16">
         <div className="page-width max-w-[80rem] text-center">
-          <h2 className="title-section">REBELYN</h2>
+          <p className="font-script text-[2.8rem] leading-none text-magenta">hecho para no pasar desapercibido</p>
+          <h2 className="title-section mt-3">REBELYN</h2>
           <p className="text-[1.5rem] leading-relaxed text-muted">
             Ropa pensada para el día a día: cortes holgados, tejidos que aguantan y detalles que solo se ven si te paras a mirarlos.
             Empezamos con pocos productos y bien hechos; crecemos cuando tiene que crecer.
@@ -88,9 +101,10 @@ export default async function HomePage() {
       {/* Llamada a la acción */}
       <section className="border-y hairline py-14 text-center">
         <div className="page-width">
-          <h2 className="title-section">El próximo drop no avisa</h2>
+          <p className="font-script text-[2.6rem] leading-none text-magenta">no te lo pierdas</p>
+          <h2 className="title-section mt-2">El próximo drop no avisa</h2>
           <p className="text-[1.5rem] text-muted mb-6">Suscríbete al newsletter en el pie y sé el primero en enterarte.</p>
-          <Link href="/shop" className="button button--volt">
+          <Link href="/shop" className="button">
             Ver la tienda
           </Link>
         </div>

@@ -16,12 +16,10 @@ const NAV = [
   { href: "/contact", label: "Contacto" },
 ];
 
-const ANNOUNCEMENTS = [
-  BRAND.announcement,
-  "Envío gratis desde 75 €",
-  "Devolución gratuita en 30 días",
-  "Atención por WhatsApp",
-];
+const ANNOUNCEMENTS = Array.from({ length: 4 }, (_, i) => ({
+  id: i,
+  text: BRAND.announcement,
+}));
 
 export function Header() {
   const { count, openDrawer } = useCart();
@@ -59,7 +57,7 @@ export function Header() {
 
           <Link href="/" className="justify-self-center" aria-label="REBELYN · Inicio">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={BRAND.logoGif} alt="REBELYN" width={180} height={71} className="h-[2.6rem] w-auto md:h-[3.2rem]" />
+            <img src={BRAND.logoGif} alt="REBELYN" width={180} height={71} loading="eager" decoding="async" className="h-[2.6rem] w-auto md:h-[3.2rem]" />
           </Link>
 
           <div className="justify-self-end flex items-center gap-4 md:gap-5">
@@ -215,9 +213,9 @@ function Marquee() {
       <div className="running-text__track" style={{ ["--duracion" as string]: "28s" }}>
         {[0, 1].map((g) => (
           <div key={g} className="running-text__group">
-            {ANNOUNCEMENTS.map((text) => (
-              <span key={text}>
-                {text}
+            {ANNOUNCEMENTS.map((item) => (
+              <span key={item.id}>
+                {item.text}
                 <span className="tick" />
               </span>
             ))}
