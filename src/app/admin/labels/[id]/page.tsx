@@ -82,6 +82,12 @@ export default async function ShippingLabelPage({ params }: Props) {
               seguimiento al contratar el envío; si ya has guardado un nº de seguimiento en el pedido, se usa en el
               código de barras.
             </p>
+            {settings.address.includes("[") && (
+              <p className="text-[1.2rem] text-magenta mt-2">
+                Aviso: la dirección del remitente está sin configurar. Rellena «Dirección fiscal» en Ajustes para que la
+                etiqueta salga completa.
+              </p>
+            )}
           </div>
           <PrintButton />
         </div>

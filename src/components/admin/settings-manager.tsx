@@ -60,11 +60,6 @@ export function SettingsManager() {
     setResetError(null);
     setResetResult(null);
 
-    if (resetCode.trim() !== "201983") {
-      setResetError("Código incorrecto. No se ha borrado nada.");
-      return;
-    }
-
     const confirmed = window.confirm(
       "¿SEGURO? Se borrarán TODOS los pedidos, productos, clientes, descuentos, devoluciones y mensajes.\n\nNo se puede deshacer. Se mantienen tu cuenta de administrador y los ajustes de la tienda.",
     );

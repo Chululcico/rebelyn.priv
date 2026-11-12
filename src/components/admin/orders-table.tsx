@@ -78,6 +78,7 @@ export function OrdersTable() {
                   <th className="p-3 text-[1.15rem] uppercase tracking-[0.08em]">Artículos</th>
                   <th className="p-3 text-[1.15rem] uppercase tracking-[0.08em]">Total</th>
                   <th className="p-3 text-[1.15rem] uppercase tracking-[0.08em]">Estado</th>
+                  <th className="p-3 text-[1.15rem] uppercase tracking-[0.08em]">Etiqueta</th>
                 </tr>
               </thead>
               <tbody>
@@ -92,6 +93,15 @@ export function OrdersTable() {
                     <td className="p-3 text-muted truncate max-w-[24rem]">{order.items.map((i) => `${i.qty}× ${i.productName}`).join(", ")}</td>
                     <td className="p-3">{formatMoney(order.totalCents)}</td>
                     <td className="p-3"><StatusBadge status={order.status} /></td>
+                    <td className="p-3">
+                      <Link
+                        href={`/admin/labels/${order.id}`}
+                        target="_blank"
+                        className="whitespace-nowrap underline text-muted hover:text-ink"
+                      >
+                        Generar
+                      </Link>
+                    </td>
                   </tr>
                 ))}
               </tbody>

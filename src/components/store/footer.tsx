@@ -21,7 +21,7 @@ const HELP = [
 const SOCIAL = [
   { href: BRAND.instagram, label: "Instagram", icon: <IconInstagram /> },
   { href: BRAND.tiktok, label: "TikTok", icon: <IconTikTok /> },
-  { href: `https://wa.me/${BRAND.phone.replace(/\D/g, "")}`, label: "WhatsApp", icon: <IconWhatsApp /> },
+  { href: `https://wa.me/34${BRAND.phone.replace(/\D/g, "")}`, label: "WhatsApp", icon: <IconWhatsApp /> },
 ];
 
 const PAYMENTS = ["visa", "mastercard", "maestro", "amex", "applepay", "googlepay"];
