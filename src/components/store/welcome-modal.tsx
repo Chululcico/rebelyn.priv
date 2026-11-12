@@ -5,8 +5,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { BRAND } from "@/lib/brand";
 
-/** Se guarda en sessionStorage: al cerrar el navegador (o abrir de nuevo la
- *  web en otra pestaña/ventana) el invitado vuelve a ver el cartel. */
+/** El invitado no guarda nada: al recargar la página vuelve a ver el cartel.
+ *  Solo se marca como visto cuando inicia sesión (o va a registrarse), y en
+ *  ese caso /api/auth/me ya lo detecta como usuario con sesión. */
 const SEEN_KEY = "rb_welcome_seen";
 const NEWSLETTER_KEY = "rb_newsletter_pref";
 
@@ -81,8 +82,14 @@ export function WelcomeModal() {
 
   function finish(guest: boolean) {
     try {
-      sessionStorage.setItem(SEEN_KEY, "1");
-      if (guest) localStorage.setItem("rb_guest", "1");
+      if (guest) {
+        // Invitado: no guardamos que ya lo ha visto, así el cartel vuelve a
+        // aparecer en cuanto recargue la página.
+        sessionStorage.removeItem(SEEN_KEY);
+        localStorage.setItem("rb_guest", "1");
+      } else {
+        sessionStorage.setItem(SEEN_KEY, "1");
+      }
     } catch {}
     document.documentElement.style.overflow = "";
     setVisible(false);
